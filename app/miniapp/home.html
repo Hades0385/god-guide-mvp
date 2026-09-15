@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>神引路 — 首頁</title>
+  <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body>
+  <main class="page">
+    <section class="hero" id="hero">
+      <div class="art">🏯</div>
+      <div class="info">
+        <span class="date" id="hero-date">載入中…</span>
+        <h2 id="hero-title">神引路</h2>
+        <p id="hero-sub"></p>
+      </div>
+      <div class="cta">
+        <a href="/miniapp/index.html">開始祭拜攻略</a>
+        <a href="/miniapp/map.html">附近哪裡可以拜？</a>
+      </div>
+    </section>
+
+    <h2>今日供品建議</h2>
+    <div class="card" id="offerings">載入中…</div>
+
+    <h2>推薦宮廟</h2>
+    <div class="card" id="temple">載入中…</div>
+
+    <h2>集點中心</h2>
+    <div class="card row" id="charm-entry" style="justify-content:space-between">
+      <span>載入中…</span>
+    </div>
+
+    <h2>神明誕辰</h2>
+    <div class="card" id="deities">載入中…</div>
+
+    <p class="disclaimer">不同地區 / 宮廟習俗不同，以下僅供參考，細節請依該宮廟為準。</p>
+  </main>
+  <script src="/assets/js/api.js"></script>
+  <script src="/assets/js/miniapp.js"></script>
+  <script src="/assets/js/layout.js" data-title="首頁" data-tab="home"></script>
+  <script>
+    (async () => {
+      try {
+        const [today, deities] = await Promise.all([
+          apiGet('/api/events/today'),
+          apiGet('/api/deities'),
+        ]);
+        const ev = today.events[0];
+        const deity = (ev && ev.deity) || deities.find(d => d.id === 'tudigong') || deities[0];
+
+        document.getElementById('hero-date').textContent =
+          `農曆 ${today.lunarDate}` + (today.mocked ? ' · Demo' : '');
+        document.getElementById('hero-title').textContent =
+          ev ? `${deity.name} ${ev.event_name}` : `今日宜拜 ${deity.name}`;
+        document.getElementById('hero-sub').textContent =
+          `主祈：${(deity.prayer_topics || []).join('、') || '平安'}`;
+
+        document.getElementById('offerings').innerHTML =
+          (deity.common_offerings || []).map(o =>
+            `<div class="row" style="justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line)">` +
+            `<span>${o}</span><a class="btn" style="padding:6px 12px;font-size:13px" href="/miniapp/map.html?offering=${encodeURIComponent(o)}">尋找店家</a></div>`).join('') || '—';
+
+        // Featured temple: partners first (no GPS needed on home).
+        const recs = await apiGet('/api/recommendations?intent=' + encodeURIComponent((deity.prayer_topics || [])[0] || ''));
+        const temple = recs.find(p => p.type === 'temple') || recs[0];
+        document.getElementById('temple').innerHTML = temple
+          ? `<h3>${temple.name} ${temple.is_partner ? '<span class="tag partner">合作</span>' : ''}</h3>` +
+            `<div class="meta">${temple.address || ''} ${temple.opening_hours ? '· ' + temple.opening_hours : ''}</div>` +
+            (temple.promotion ? `<p>🎁 ${temple.promotion}</p>` : '') +
+            `<a class="btn block" href="https://www.google.com/maps/dir/?api=1&destination=${temple.latitude},${temple.longitude}">導航前往</a>`
+          : '暫無推薦宮廟';
+
+        try {
+          const [pts, my] = await Promise.all([
+            apiGet(`/api/points?userIdHash=${MiniApp.uid()}`),
+            apiGet(`/api/amulets?userIdHash=${MiniApp.uid()}`),
+          ]);
+          const held = my.filter(c => c.status === 'held').length;
+          document.getElementById('charm-entry').innerHTML =
+            `<span>🪙 <strong>${pts.balance}</strong> 點 · 🧧 ${held} 枚平安符</span><a class="btn" href="/miniapp/charms.html">集點</a>`;
+        } catch (_) {
+          document.getElementById('charm-entry').innerHTML =
+            `<span>🪙 點數集點</span><a class="btn" href="/miniapp/charms.html">集點</a>`;
+        }
+
+        document.getElementById('deities').innerHTML = deities.map(d =>
+          `<div class="row" style="justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line)">` +
+          `<span>${d.name}</span><span class="meta">農曆 ${d.lunar_birthday || '—'}</span></div>`).join('');
+      } catch (e) {
+        document.getElementById('hero-date').textContent = '連線失敗';
+        document.getElementById('hero-sub').textContent = '請確認 server 有啟動 (npm run dev)';
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>神引路 — 祭拜諮詢</title>
+  <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body>
+  <main class="page">
+    <p class="meta" id="greeting">載入中…</p>
+
+    <h2>1. 選神明</h2>
+    <div class="card">
+      <select id="deity" style="width:100%"></select>
+    </div>
+
+    <h2>2. 你主要想祈求什麼？</h2>
+    <div class="qr" id="qr">
+      <button data-intent="求財">求財</button>
+      <button data-intent="事業">事業</button>
+      <button data-intent="平安">闔家平安</button>
+      <button data-intent="綜合">綜合</button>
+    </div>
+    <div class="row">
+      <input type="text" id="msg" placeholder="或直接輸入，例如：最近工作不順…">
+      <button class="btn" id="send">送出</button>
+    </div>
+
+    <h2>3. AI 建議</h2>
+    <pre class="reply" id="reply">選祈求主題後顯示</pre>
+    <p class="meta" id="sources"></p>
+
+    <h2>4. 供品清單（可勾選、可儲存）</h2>
+    <ul class="checklist" id="checklist"></ul>
+    <button id="save" class="btn block" style="display:none">儲存為我的清單</button>
+    <p class="meta" id="saved"></p>
+
+    <h2>5. 祭拜流程（跟著做）</h2>
+    <div class="card stepper" id="stepper" style="display:none">
+      <div class="step-no" id="step-no"></div>
+      <div class="step-text" id="step-text"></div>
+      <div class="dots" id="step-dots"></div>
+      <div class="nav">
+        <button class="btn secondary" id="step-prev">← 上一步</button>
+        <button class="btn" id="step-next">下一步 →</button>
+      </div>
+    </div>
+
+    <h2>6. AI 祝禱小助手</h2>
+    <div class="card">
+      <div class="row" style="margin-bottom:8px">
+        <input type="text" id="pname" placeholder="你的姓名（祝禱詞用）" maxlength="20">
+      </div>
+      <div class="row" style="margin-bottom:8px">
+        <select id="plang" style="flex:1">
+          <option value="mandarin">國語</option>
+          <option value="taiwanese">台語</option>
+        </select>
+        <button class="btn" id="pray">生成祝禱詞</button>
+      </div>
+      <pre class="reply" id="prayer" style="display:none"></pre>
+      <button class="btn secondary block" id="share" style="display:none">💌 邀請家人 / 代家人祈福（分享）</button>
+      <p class="meta" id="share-status"></p>
+    </div>
+
+    <a class="btn secondary block" href="/miniapp/map.html" style="margin-top:8px">查看附近店家</a>
+
+    <p class="disclaimer">不同地區 / 宮廟習俗不同，以下僅供參考，細節請依該宮廟為準。</p>
+  </main>
+  <script src="/assets/js/api.js"></script>
+  <script src="/assets/js/miniapp.js"></script>
+  <script src="/assets/js/share.js"></script>
+  <script src="/assets/js/layout.js" data-title="祭拜諮詢" data-tab="chat"></script>
+  <script>
+    let deityId = 'tudigong', savedId = null, draftOfferings = [], guide = [], stepIdx = 0;
+    const $ = (id) => document.getElementById(id);
+
+    (async () => {
+      try {
+        const deities = await apiGet('/api/deities');
+        $('deity').innerHTML = deities.map(d =>
+          `<option value="${d.id}"${d.id === 'tudigong' ? ' selected' : ''}>${d.name}（農曆${d.lunar_birthday || '—'}）</option>`).join('');
+        $('greeting').textContent = '選好神明與祈求主題，AI 會給你祭拜攻略。';
+      } catch (e) {
+        $('greeting').textContent = 'API 連線失敗，請確認 server 有啟動 (npm run dev)';
+      }
+    })();
+
+    $('deity').addEventListener('change', (e) => { deityId = e.target.value; });
+    $('qr').addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-intent]');
+      if (b) ask(b.dataset.intent);
+    });
+    $('send').addEventListener('click', () => {
+      const v = $('msg').value.trim();
+      if (v) ask(v);
+    });
+
+    async function ask(message) {
+      $('reply').textContent = '思考中…';
+      try {
+        const r = await apiPost('/api/chat', { message, deityId });
+        localStorage.setItem('gg-intent', r.intent);
+        $('reply').textContent = r.reply;
+        $('sources').textContent = '出處：' + (r.sourceNotes.join('；') || '—');
+        draftOfferings = r.checklistDraft.offerings;
+        guide = r.checklistDraft.guide;
+        stepIdx = 0;
+        savedId = null;
+        $('saved').textContent = '';
+        $('save').style.display = 'block';
+        renderDraft();
+        renderStep();
+      } catch (e) {
+        $('reply').textContent = '查詢失敗：' + e.message;
+      }
+    }
+
+    const whereToBuy = (label) =>
+      `<a class="mini-btn" href="/miniapp/map.html?offering=${encodeURIComponent(label)}">哪裡買</a>`;
+
+    function renderDraft() {
+      $('checklist').innerHTML = draftOfferings.map(d =>
+        `<li><label><input type="checkbox" disabled> ${d.label}</label> ${whereToBuy(d.label)}</li>`).join('');
+    }
+
+    function renderStep() {
+      const box = $('stepper');
+      if (!guide.length) { box.style.display = 'none'; return; }
+      box.style.display = 'block';
+      stepIdx = Math.max(0, Math.min(stepIdx, guide.length - 1));
+      $('step-no').textContent = `步驟 ${guide[stepIdx].step} / ${guide.length}`;
+      $('step-text').textContent = guide[stepIdx].label;
+      $('step-dots').innerHTML = guide.map((_, i) =>
+        `<span class="${i <= stepIdx ? 'done' : ''}"></span>`).join('');
+      $('step-prev').disabled = stepIdx === 0;
+      $('step-next').textContent = stepIdx === guide.length - 1 ? '完成 ✓' : '下一步 →';
+    }
+    $('step-prev').addEventListener('click', () => { stepIdx--; renderStep(); });
+    $('step-next').addEventListener('click', () => {
+      if (stepIdx < guide.length - 1) { stepIdx++; renderStep(); }
+      else $('step-text').textContent = '🎉 祭拜完成，神明保佑！';
+    });
+
+    $('save').addEventListener('click', async () => {
+      try {
+        const c = await apiPost('/api/checklists', { deityId });
+        savedId = c.id;
+        $('saved').textContent = `已儲存（${c.id.slice(0, 8)}…），勾選會同步到 server`;
+        $('save').style.display = 'none';
+        $('checklist').innerHTML = c.items.map(it =>
+          `<li><label><input type="checkbox" data-item="${it.id}"${it.checked ? ' checked' : ''}> ${it.label}</label> ${whereToBuy(it.label)}</li>`).join('');
+      } catch (e) {
+        $('saved').textContent = '儲存失敗：' + e.message;
+      }
+    });
+
+    $('checklist').addEventListener('change', async (e) => {
+      const box = e.target.closest('input[data-item]');
+      if (!box || !savedId) return;
+      try {
+        await apiPatch(`/api/checklists/${savedId}/items/${box.dataset.item}`, { checked: box.checked });
+      } catch (err) {
+        box.checked = !box.checked;
+        $('saved').textContent = '同步失敗：' + err.message;
+      }
+    });
+
+    // AI 祝禱小助手 + 家人分享
+    let lastPrayer = null, lastDeityName = '', lastIntent = '綜合';
+    $('pray').addEventListener('click', async () => {
+      const name = $('pname').value.trim();
+      if (!name) { alert('請先輸入姓名'); return; }
+      $('prayer').style.display = 'block';
+      $('prayer').textContent = '生成中…';
+      try {
+        const r = await apiPost('/api/prayer', {
+          name, deityId,
+          topic: localStorage.getItem('gg-intent') || '綜合',
+          lang: $('plang').value,
+        });
+        lastPrayer = r.prayer;
+        lastDeityName = r.deity ? r.deity.name : '';
+        lastIntent = r.topic;
+        $('prayer').textContent = r.prayer;
+        $('share').style.display = 'block';
+        $('share-status').textContent = '';
+      } catch (e) {
+        $('prayer').textContent = '生成失敗：' + e.message;
+      }
+    });
+    $('share').addEventListener('click', async () => {
+      if (!lastPrayer) return;
+      const flex = buildShareFlex(lastDeityName, `為家人祈求「${lastIntent}」`, lastPrayer);
+      try {
+        const via = await shareToLine(flex, `神引路：${lastDeityName} 祝禱詞`);
+        $('share-status').textContent = via === 'liff' ? '已開啟 LINE 分享對象選擇' :
+          via === 'webshare' ? '已開啟系統分享' :
+          via === 'cancelled' ? '已取消分享' : '已複製到剪貼簿，貼到 LINE 家族群組即可';
+      } catch (e) {
+        $('share-status').textContent = '分享失敗：' + e.message;
+      }
+    });
+  </script>
+</body>
+</html>

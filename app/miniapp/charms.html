@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>神引路 — 集點中心</title>
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <style>
+    .balance { text-align: center; background: linear-gradient(135deg, #8b0000, #b3402e); color: #fff; border: 0; }
+    .balance .pts { font-size: 40px; font-weight: 800; }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="card balance">
+      <div class="meta" style="color:#ffd">我的點數 <span id="uid"></span></div>
+      <div class="pts"><span id="balance">–</span> <span style="font-size:15px">點</span></div>
+      <div class="meta" style="color:#ffd">購物消費集點 → 兌平安符 / 折扣券</div>
+    </div>
+    <a class="btn block" href="/miniapp/shop.html">🛒 去購買祭拜套組賺點數</a>
+
+    <h2>點數兌換</h2>
+    <div class="card">
+      <div class="row" style="margin-bottom:8px">
+        <select id="temple" style="flex:1;min-width:0"></select>
+      </div>
+      <button class="btn block" id="redeem-amulet" style="margin-bottom:8px">🧧 兌換實體平安符（50 點）</button>
+      <div class="row" style="margin-bottom:8px">
+        <select id="coupon-shop" style="flex:1;min-width:0"></select>
+      </div>
+      <button class="btn secondary block" id="redeem-coupon">🎟️ 兌換消費折扣券（30 點）</button>
+    </div>
+
+    <h2>我的平安符</h2>
+    <div id="held"></div>
+
+    <h2>我的折扣券</h2>
+    <div id="coupons"></div>
+
+    <h2>集點紀錄</h2>
+    <div class="card" id="ledger"><span class="meta">載入中…</span></div>
+
+    <p class="disclaimer">點數為競賽 Demo 機制；兌換規則以合作宮廟／店家公告為準。</p>
+  </main>
+
+  <script src="/assets/js/api.js"></script>
+  <script src="/assets/js/miniapp.js"></script>
+  <script src="/assets/js/layout.js" data-title="集點中心" data-tab="charms"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const uid = MiniApp.uid();
+    $('uid').textContent = `(${uid.slice(0, 8)}…)`;
+
+    async function refresh() {
+      const [pts, amulets, coupons] = await Promise.all([
+        apiGet(`/api/points?userIdHash=${uid}`),
+        apiGet(`/api/amulets?userIdHash=${uid}`),
+        apiGet(`/api/coupons?userIdHash=${uid}`),
+      ]);
+      $('balance').textContent = pts.balance;
+      $('ledger').innerHTML = pts.ledger.slice(-5).reverse().map(e =>
+        `<div class="row" style="justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--line)">` +
+        `<span>${e.reason}</span><span><strong>${e.delta > 0 ? '+' : ''}${e.delta}</strong></span></div>`).join('') || '<span class="meta">尚無紀錄</span>';
+      const held = amulets.filter(c => c.status === 'held');
+      const done = amulets.filter(c => c.status === 'redeemed');
+      $('held').innerHTML = (held.map(c =>
+        `<div class="card charm"><div class="talisman">🧧</div><div class="grow"><strong>${c.label}</strong><div class="meta">來自 ${c.fromPlaceName}</div></div></div>`).join('') +
+        done.map(c =>
+        `<div class="card charm redeemed"><div class="talisman">🧧</div><div class="grow"><strong>${c.label}</strong><div class="meta">已於 ${c.redeemedAtPlaceName} 兌換</div></div></div>`).join('')) || '<div class="card">尚無平安符</div>';
+      $('coupons').innerHTML = coupons.length ? coupons.map(c =>
+        `<div class="card"><strong>🎟️ ${c.title}</strong><div class="meta">兌換碼：${c.code} · ${c.status}</div></div>`).join('') : '<div class="card">尚無折扣券</div>';
+    }
+
+    $('redeem-amulet').addEventListener('click', async () => {
+      try {
+        const r = await apiPost('/api/points/redeem', { userIdHash: uid, kind: 'amulet', placeId: $('temple').value });
+        alert(`兌換成功！請至 ${r.reward.redeemedAtPlaceName} 領取實體平安符（餘額 ${r.balance}）`);
+        await refresh();
+      } catch (e) { alert('兌換失敗：' + e.message); }
+    });
+    $('redeem-coupon').addEventListener('click', async () => {
+      try {
+        const r = await apiPost('/api/points/redeem', { userIdHash: uid, kind: 'coupon', placeId: $('coupon-shop').value });
+        alert(`獲得折扣券！兌換碼：${r.reward.code}（餘額 ${r.balance}）`);
+        await refresh();
+      } catch (e) { alert('兌換失敗：' + e.message); }
+    });
+
+    (async () => {
+      try {
+        const recs = await apiGet('/api/recommendations');
+        const partners = recs.filter(p => p.is_partner);
+        const shops = partners.filter(p => p.type !== 'temple');
+        const temples = partners.filter(p => p.type === 'temple');
+        $('coupon-shop').innerHTML = shops.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+        $('temple').innerHTML = temples.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+        await refresh();
+      } catch (e) {
+        $('ledger').innerHTML = `<span class="meta">載入失敗：${e.message}</span>`;
+      }
+    })();
+  </script>
+</body>
+</html>

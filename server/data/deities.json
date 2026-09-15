@@ -1,0 +1,72 @@
+[
+  {
+    "id": "tudigong",
+    "name": "土地公",
+    "aliases": ["福德正神", "頭牙"],
+    "birthday": "2026-03-12",
+    "lunar_birthday": "二月初二",
+    "main_beliefs": ["守護地方", "求財", "保平安"],
+    "prayer_topics": ["求財", "事業", "平安"],
+    "common_offerings": ["鮮花", "水果", "清茶", "發粿", "金紙"],
+    "ritual_steps": ["淨手", "上香三炷", "稟明姓名住址與祈求", "獻供品", "化金", "感謝"],
+    "taboos": ["供品避免不潔", "勿喧嘩"],
+    "related_shops": ["offering_shop", "joss_paper_shop"],
+    "source_notes": ["Demo seed，僅供參考：習俗以各宮廟公告為準"]
+  },
+  {
+    "id": "mazu",
+    "name": "媽祖",
+    "aliases": ["天上聖母"],
+    "birthday": "",
+    "lunar_birthday": "三月廿三",
+    "main_beliefs": ["航海守護", "平安"],
+    "prayer_topics": ["平安", "事業"],
+    "common_offerings": ["鮮花", "水果", "清茶"],
+    "ritual_steps": ["上香", "祈求", "感謝"],
+    "taboos": [],
+    "related_shops": ["flower_shop"],
+    "source_notes": ["Demo seed skeleton"]
+  },
+  {
+    "id": "guandi",
+    "name": "關聖帝君",
+    "aliases": ["關公"],
+    "birthday": "",
+    "lunar_birthday": "六月廿四",
+    "main_beliefs": ["忠義", "事業", "財運"],
+    "prayer_topics": ["事業", "求財"],
+    "common_offerings": ["清茶", "水果"],
+    "ritual_steps": ["上香", "祈求", "感謝"],
+    "taboos": [],
+    "related_shops": [],
+    "source_notes": ["Demo seed skeleton"]
+  },
+  {
+    "id": "guanyin",
+    "name": "觀世音菩薩",
+    "aliases": ["觀音"],
+    "birthday": "",
+    "lunar_birthday": "二月十九",
+    "main_beliefs": ["慈悲", "平安", "消災"],
+    "prayer_topics": ["平安"],
+    "common_offerings": ["鮮花", "水果", "清茶"],
+    "ritual_steps": ["合掌", "祈求", "感謝"],
+    "taboos": [],
+    "related_shops": ["flower_shop"],
+    "source_notes": ["Demo seed skeleton"]
+  },
+  {
+    "id": "yuhuang",
+    "name": "玉皇大帝",
+    "aliases": ["天公"],
+    "birthday": "",
+    "lunar_birthday": "正月初九",
+    "main_beliefs": ["天界主宰", "平安"],
+    "prayer_topics": ["平安", "事業"],
+    "common_offerings": ["鮮花", "水果", "清茶"],
+    "ritual_steps": ["上香", "祈求", "感謝"],
+    "taboos": [],
+    "related_shops": [],
+    "source_notes": ["Demo seed skeleton"]
+  }
+]

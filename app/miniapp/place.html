@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>神引路 — 店家詳情</title>
+  <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body>
+  <main class="page" style="padding-bottom:16px">
+    <div class="card" id="detail">載入中…</div>
+    <h2>店內商品</h2>
+    <div id="products"><div class="card">載入中…</div></div>
+    <div class="actions row" id="actions" style="display:none">
+      <a class="btn secondary" id="nav" href="#" style="flex:1">導航</a>
+      <a class="btn" id="collect" style="flex:1;display:none" href="/miniapp/shop.html">🛒 購買套組</a>
+    </div>
+    <p class="disclaimer">不同地區 / 宮廟習俗不同，資訊僅供參考。</p>
+  </main>
+  <script src="/assets/js/api.js"></script>
+  <script src="/assets/js/miniapp.js"></script>
+  <script src="/assets/js/layout.js" data-title="店家詳情" data-back="/miniapp/map.html"></script>
+  <script>
+    (async () => {
+      const id = new URLSearchParams(location.search).get('id');
+      if (!id) { document.getElementById('detail').textContent = '缺少店家 id'; return; }
+      try {
+        const p = await apiGet(`/api/places/${id}`);
+        document.getElementById('detail').innerHTML =
+          `<h3>${p.name} ${p.is_partner ? '<span class="tag partner">合作</span>' : ''}</h3>` +
+          `<div><span class="tag">${p.type}</span> ${(p.tags || []).map(t => `<span class="tag">${t}</span>`).join('')}</div>` +
+          `<p class="meta">${[p.address, p.opening_hours, p.phone].filter(Boolean).join(' · ')}</p>` +
+          (p.description ? `<p>${p.description}</p>` : '') +
+          (p.promotion ? `<p>🎁 ${p.promotion}</p>` : '');
+        const box = document.getElementById('actions');
+        box.style.display = 'flex';
+        document.getElementById('nav').href =
+          `https://www.google.com/maps/dir/?api=1&destination=${p.latitude},${p.longitude}`;
+        // 集點制取代免費領符：合作店家導向集點中心消費集點。
+        if (p.is_partner) {
+          document.getElementById('collect').style.display = 'block';
+        }
+        try {
+          const products = await apiGet(`/api/places/${id}/products`);
+          document.getElementById('products').innerHTML = products.length
+            ? products.map((pr) =>
+              `<div class="card row" style="justify-content:space-between">` +
+              `<span><strong>${pr.name}</strong><div class="meta">${pr.description || ''}</div></span>` +
+              `<span><strong>NT$${pr.price}</strong><span class="meta">/${pr.unit || '份'}</span></span></div>`).join('')
+            : '<div class="card">此店家暫無商品資訊（宮廟不販售供品）</div>';
+        } catch (_) {
+          document.getElementById('products').innerHTML = '<div class="card">商品載入失敗</div>';
+        }
+      } catch (e) {
+        document.getElementById('detail').textContent = '載入失敗：' + e.message;
+      }
+    })();
+  </script>
+</body>
+</html>

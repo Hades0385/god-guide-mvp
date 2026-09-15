@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>神引路 — 更多</title>
+  <link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body>
+  <main class="page">
+    <h2>競賽 Demo 控制台</h2>
+    <div class="card">
+      <p class="meta" style="margin-top:0">現場無真實 GPS 也可走完：固定土地公誕辰 + mock GPS (25.0330, 121.5654)。</p>
+      <div class="qr">
+        <button data-act="festival">模擬今日神明誕辰</button>
+        <button data-act="push">發送 LINE 推播</button>
+        <button data-act="query">模擬用戶查詢</button>
+        <button data-act="checklist">產生祭拜清單</button>
+        <button data-act="map" class="ghost">開啟地圖</button>
+        <button data-act="shops">顯示合作店家</button>
+        <button data-act="nav" class="ghost">模擬導航</button>
+        <button data-act="shop" class="ghost">展示導購</button>
+        <button data-act="beacon">模擬 Beacon 進店</button>
+        <button data-act="prayer">生成祝禱詞</button>
+      </div>
+    </div>
+    <h2>執行結果</h2>
+    <pre class="reply" id="out">就緒</pre>
+    <p class="disclaimer">Demo 專用頁面，不對外公開。</p>
+  </main>
+  <script src="/assets/js/api.js"></script>
+  <script src="/assets/js/layout.js" data-title="更多" data-tab="more"></script>
+  <script src="/assets/js/demo.js"></script>
+</body>
+</html>

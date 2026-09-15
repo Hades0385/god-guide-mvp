@@ -1,0 +1,12 @@
+[
+  { "id": "p-s1-1", "shopId": "s1", "name": "新鮮水果籃", "price": 250, "unit": "籃", "offerings": ["水果"], "description": "當季水果五樣", "is_demo": true },
+  { "id": "p-s1-2", "shopId": "s1", "name": "發粿禮盒", "price": 180, "unit": "盒", "offerings": ["發粿"], "description": "傳統發粿六入", "is_demo": true },
+  { "id": "p-s1-3", "shopId": "s1", "name": "清茶包", "price": 120, "unit": "包", "offerings": ["清茶"], "description": "高山烏龍茶包", "is_demo": true },
+  { "id": "p-s1-4", "shopId": "s1", "name": "綜合拜拜套組", "price": 399, "unit": "組", "offerings": ["水果", "發粿", "清茶"], "description": "水果＋發粿＋清茶一次備齊", "is_demo": true },
+  { "id": "p-s1-5", "shopId": "s1", "name": "鮮花小束", "price": 150, "unit": "束", "offerings": ["鮮花"], "description": "供花小束", "is_demo": true },
+  { "id": "p-s1-6", "shopId": "s1", "name": "環保金紙", "price": 90, "unit": "份", "offerings": ["金紙"], "description": "低煙環保金紙", "is_demo": true },
+  { "id": "p-s2-1", "shopId": "s2", "name": "足百金紙", "price": 100, "unit": "份", "offerings": ["金紙"], "description": "壽金刈金足百", "is_demo": true },
+  { "id": "p-s2-2", "shopId": "s2", "name": "香燭組", "price": 80, "unit": "組", "offerings": ["金紙"], "description": "大香＋紅燭一對", "is_demo": true },
+  { "id": "p-s3-1", "shopId": "s3", "name": "鮮花束", "price": 200, "unit": "束", "offerings": ["鮮花"], "description": "百合＋康乃馨", "is_demo": true },
+  { "id": "p-s3-2", "shopId": "s3", "name": "蘭花盆栽", "price": 350, "unit": "盆", "offerings": ["鮮花"], "description": "蝴蝶蘭盆栽", "is_demo": true }
+]

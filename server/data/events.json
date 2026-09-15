@@ -1,0 +1,7 @@
+[
+  { "id": "e-tudigong", "deity_id": "tudigong", "event_name": "土地公誕辰（頭牙）", "lunar_date": "二月初二", "solar_date_rule": "", "description": "MVP 主場景 Demo 日期", "prayer_topics": ["求財", "事業"], "notification_enabled": true },
+  { "id": "e-mazu", "deity_id": "mazu", "event_name": "媽祖誕辰", "lunar_date": "三月廿三", "solar_date_rule": "", "description": "", "prayer_topics": ["平安"], "notification_enabled": true },
+  { "id": "e-guandi", "deity_id": "guandi", "event_name": "關聖帝君誕辰", "lunar_date": "六月廿四", "solar_date_rule": "", "description": "", "prayer_topics": ["事業"], "notification_enabled": true },
+  { "id": "e-guanyin", "deity_id": "guanyin", "event_name": "觀音誕辰", "lunar_date": "二月十九", "solar_date_rule": "", "description": "", "prayer_topics": ["平安"], "notification_enabled": true },
+  { "id": "e-yuhuang", "deity_id": "yuhuang", "event_name": "天公生", "lunar_date": "正月初九", "solar_date_rule": "", "description": "", "prayer_topics": ["平安"], "notification_enabled": true }
+]

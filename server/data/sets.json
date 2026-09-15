@@ -1,0 +1,7 @@
+[
+  { "id": "set-s1-1", "shopId": "s1", "name": "土地公求財套組", "price": 499, "contents": ["新鮮水果籃×1", "發粿禮盒×1", "清茶包×1", "鮮花小束×1"], "description": "求財一次備齊，合作店家限定", "is_demo": true },
+  { "id": "set-s1-2", "shopId": "s1", "name": "簡易拜拜套組", "price": 299, "contents": ["發粿禮盒×1", "清茶包×1", "環保金紙×1"], "description": "日常參拜輕量組", "is_demo": true },
+  { "id": "set-s2-1", "shopId": "s2", "name": "金紙香燭套組", "price": 150, "contents": ["足百金紙×1", "香燭組×1"], "description": "傳統金紙香燭", "is_demo": true },
+  { "id": "set-s3-1", "shopId": "s3", "name": "供花套組", "price": 299, "contents": ["鮮花束×1", "鮮花小束×1"], "description": "合作花店 9 折", "is_demo": true },
+  { "id": "set-s3-2", "shopId": "s3", "name": "蘭花敬神組", "price": 350, "contents": ["蘭花盆栽×1"], "description": "蝴蝶蘭敬神", "is_demo": true }
+]

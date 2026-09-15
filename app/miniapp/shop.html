@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>神引路 — 購物</title>
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <style>
+    .payhead { background: #06c755; color: #fff; border-radius: 12px; padding: 10px; text-align: center; font-weight: 700; margin-bottom: 10px; }
+    .spinner { text-align: center; padding: 20px; font-size: 15px; }
+    .contents { margin: 8px 0; padding-left: 20px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <h2>祭拜套組（智慧零售）</h2>
+    <div id="sets"><div class="card">載入中…</div></div>
+    <p class="disclaimer">概念 Demo：付款為模擬，不會真的扣款。結帳後自動集點（NT$10＝1 點）。</p>
+  </main>
+
+  <div class="sheet-backdrop" id="pay-backdrop"></div>
+  <section class="sheet" id="pay-sheet">
+    <div class="grab"></div>
+    <div class="payhead">LINE Pay（模擬結帳）</div>
+    <div id="pay-body"></div>
+    <div class="actions">
+      <button class="btn secondary" id="pay-cancel">取消</button>
+      <button class="btn" id="pay-confirm" style="background:#06c755">確認付款</button>
+    </div>
+  </section>
+
+  <script src="/assets/js/api.js"></script>
+  <script src="/assets/js/miniapp.js"></script>
+  <script src="/assets/js/layout.js" data-title="購買套組" data-tab="shop"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const uid = MiniApp.uid();
+    let sets = [], pendingOrder = null;
+
+    function closePay() {
+      $('pay-sheet').classList.remove('open');
+      $('pay-backdrop').classList.remove('open');
+    }
+    $('pay-cancel').addEventListener('click', closePay);
+    $('pay-backdrop').addEventListener('click', closePay);
+
+    $('pay-confirm').addEventListener('click', async () => {
+      if (!pendingOrder) return;
+      $('pay-body').innerHTML = '<div class="spinner">處理中…</div>';
+      await new Promise(r => setTimeout(r, 800)); // 模擬支付延遲
+      try {
+        const r = await apiPost('/api/points/earn', {
+          userIdHash: uid, placeId: pendingOrder.shop.id, amountNt: pendingOrder.set.price,
+        });
+        $('pay-body').innerHTML = `<div class="spinner">✅ 付款成功！<br>獲得 ${r.entry.delta} 點（餘額 ${r.balance}）<br><a href="/miniapp/charms.html">去集點中心看看</a></div>`;
+      } catch (e) {
+        $('pay-body').innerHTML = `<div class="spinner">付款失敗：${e.message}</div>`;
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-buy]');
+      if (!b) return;
+      const set = sets.find(s => s.id === b.dataset.buy);
+      if (!set || !set.shop) return;
+      pendingOrder = { set, shop: set.shop };
+      $('pay-body').innerHTML = `<p><strong>${set.shop.name}</strong></p>` +
+        `<p>${set.name} — NT$${set.price}</p>` +
+        `<p class="meta">付款後約得 ${Math.floor(set.price / 10)} 點</p>`;
+      $('pay-sheet').classList.add('open');
+      $('pay-backdrop').classList.add('open');
+    });
+
+    (async () => {
+      try {
+        sets = await apiGet('/api/sets');
+        $('sets').innerHTML = sets.map(s =>
+          `<div class="card"><h3>${s.name}</h3>` +
+          `<div class="meta">${s.shop ? `${s.shop.name} ${s.shop.is_partner ? '· 合作' : ''} · ${s.shop.address || ''}` : '（店家資料缺失）'}</div>` +
+          (s.description ? `<p>${s.description}</p>` : '') +
+          `<ul class="contents">${(s.contents || []).map(c => `<li>${c}</li>`).join('')}</ul>` +
+          `<div class="row" style="justify-content:space-between;margin-top:8px">` +
+          `<strong>NT$${s.price}</strong>` +
+          (s.shop && s.shop.is_partner
+            ? `<button class="btn" data-buy="${s.id}">用 LINE Pay 購買</button>`
+            : `<span class="meta">非合作店家僅展示</span>`) +
+          `</div></div>`).join('');
+      } catch (e) {
+        $('sets').innerHTML = `<div class="card">載入失敗：${e.message}</div>`;
+      }
+    })();
+  </script>
+</body>
+</html>
