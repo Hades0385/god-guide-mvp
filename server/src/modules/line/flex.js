@@ -92,7 +92,7 @@ function buildCouponFlex(place, miniappUrl) {
           { type: 'text', text: '你走進合作商圈了！', weight: 'bold', color: '#8B0000', size: 'sm' },
           { type: 'text', text: place ? place.name : '', weight: 'bold', size: 'xl', wrap: true },
           { type: 'text', text: `🎁 ${promo}`, size: 'sm', color: '#555555', wrap: true },
-          { type: 'text', text: '消費集點可兌換平安符與折扣券', size: 'xs', color: '#888888', wrap: true },
+          { type: 'text', text: '消費集點可兌換合作店家折扣券', size: 'xs', color: '#888888', wrap: true },
         ],
       },
       footer: {

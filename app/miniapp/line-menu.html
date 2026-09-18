@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>神引路 — LINE 圖文選單</title><link rel="stylesheet" href="/assets/css/style.css"></head>
+<body>
+  <main class="page" style="padding-bottom:20px">
+    <p class="meta">圖文選單會出現在 LINE 官方帳號聊天室下方，六個區域直接開啟 Mini App 功能。</p>
+    <img src="/assets/images/line-rich-menu.jpg" alt="神引路 LINE 圖文選單預覽" style="display:block;width:100%;border:1px solid var(--line);border-radius:8px">
+    <div class="card" id="status">檢查 LINE 設定中…</div>
+    <button class="btn block icon-btn" id="install" disabled><i class="bi bi-cloud-upload"></i>安裝為預設圖文選單</button>
+    <p class="disclaimer">正式安裝需要在 `.env` 設定 `LINE_CHANNEL_ACCESS_TOKEN`，並透過公開 HTTPS 網址執行，讓圖文選單可開啟 Mini App。</p>
+  </main>
+  <script src="/assets/js/api.js"></script><script src="/assets/js/layout.js" data-title="LINE 圖文選單" data-back="/miniapp/more.html"></script>
+  <script>
+    const button=document.getElementById('install'),status=document.getElementById('status');
+    button.onclick=async()=>{button.disabled=true;button.innerHTML='<i class="bi bi-hourglass-split"></i>安裝中…';try{const result=await apiPost('/api/line/rich-menu/install',{});status.innerHTML=`<strong>安裝完成</strong><div class="meta">Rich Menu ID：${result.richMenuId}</div>`;button.innerHTML='<i class="bi bi-check2"></i>已安裝';}catch(e){status.textContent='安裝失敗：'+e.message;button.disabled=false;button.innerHTML='<i class="bi bi-arrow-repeat"></i>重新安裝';}};
+    apiGet('/api/line/rich-menu').then(data=>{if(data.readyToInstall){status.innerHTML='<strong>LINE 權杖已設定</strong><div class="meta">確認目前網址是公開 HTTPS 後即可安裝。</div>';button.disabled=false;}else{status.innerHTML='<strong>預覽模式</strong><div class="meta">尚未設定 LINE_CHANNEL_ACCESS_TOKEN，選單圖片與點擊區域已就緒。</div>';}}).catch(()=>{status.textContent='無法讀取 LINE 設定';});
+  </script>
+</body></html>

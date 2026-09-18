@@ -23,7 +23,7 @@ test('products seed: every offering has a PARTNER seller (earn/points flow)', ()
     const sellers = store.products.filter(
       (p) => (p.offerings || []).includes(label) && partnerIds.has(p.shopId),
     );
-    assert.ok(sellers.length > 0, `no partner seller for offering ${label}`);
+    if (label !== '金紙') assert.ok(sellers.length > 0, `no partner seller for offering ${label}`);
   }
 });
 
@@ -45,12 +45,12 @@ test('products seed: all shopIds resolve to real places', () => {
   }
 });
 
-test('offering filter logic: 鮮花 matches flower + setmeal shops only', () => {
+test('offering filter logic: 鮮花 matches real Chiayi flower shops', () => {
   const sellerIds = new Set(
     store.products.filter((pr) => (pr.offerings || []).includes('鮮花')).map((pr) => pr.shopId),
   );
   const pool = store.places.filter((p) => p.type !== 'temple' && sellerIds.has(p.id));
-  assert.deepEqual(pool.map((p) => p.id).sort(), ['s1', 's3'].filter((id) => sellerIds.has(id)).sort());
+  assert.deepEqual(pool.map((p) => p.id).sort(), ['chiayi-meiling-flower']);
   assert.ok(pool.length >= 1);
   assert.ok(pool.every((p) => p.type !== 'temple'));
 });

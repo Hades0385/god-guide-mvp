@@ -26,15 +26,15 @@ document.addEventListener('click', async (e) => {
       out.textContent = `已產生清單 ${r.id.slice(0, 8)}…，共 ${r.items.length} 項\n` +
         r.items.slice(0, 5).map(i => `□ ${i.label}`).join('\n');
     } else if (act === 'shops') {
-      const r = await apiGet('/api/recommendations?intent=' + encodeURIComponent('求財') + '&lat=25.033&lng=121.5654');
+      const r = await apiGet('/api/recommendations?intent=' + encodeURIComponent('求財') + '&lat=23.4801&lng=120.4491');
       out.textContent = r.map(p => `・${p.name}（${p.type}${p.is_partner ? '【合作】' : ''} ${p.distanceKm != null ? p.distanceKm.toFixed(2) + 'km' : ''}）`).join('\n') || '（無結果）';
     } else if (act === 'nav') {
-      out.textContent = '導航連結格式：\nhttps://www.google.com/maps/dir/?api=1&destination=25.0335,121.565\n（地圖頁每家店皆有此連結）';
+      out.textContent = '導航連結格式：\nhttps://www.google.com/maps/dir/?api=1&destination=23.47838,120.45401\n（地圖頁每個地點皆有此連結）';
     } else if (act === 'shop') {
-      const r = await apiGet('/api/places/t1');
+      const r = await apiGet('/api/places/chiayi-meiling-flower');
       out.textContent = `合作店家：${r.name}\n優惠：${r.promotion || '—'}\n電話：${r.phone || '—'}`;
     } else if (act === 'beacon') {
-      const r = await apiPost('/api/beacon/enter', { placeId: 't1' });
+      const r = await apiPost('/api/beacon/enter', { placeId: 'chiayi-meiling-flower' });
       out.textContent = `Beacon 模擬：走進 ${r.place.name}\n推播：${r.message}\nFlex altText：${r.pushPreview.altText}`;
     } else if (act === 'prayer') {
       const r = await apiPost('/api/prayer', { name: '王小明', topic: '求財', lang: 'taiwanese', deityId: 'tudigong' });

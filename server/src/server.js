@@ -13,6 +13,7 @@ const { getTodayFestival } = require('./modules/events/calendar');
 const { verifyLineSignature } = require('./middleware/lineSignature');
 const { routeLineEvent } = require('./modules/line/webhook');
 const { buildFestivalFlex, buildCouponFlex } = require('./modules/line/flex');
+const { buildRichMenu, installRichMenu } = require('./modules/line/richMenu');
 const { handleChat } = require('./modules/chat/service');
 const { createChecklist, toggleItem } = require('./modules/checklist/store');
 const { collectCharm, redeemCharm, listByUser } = require('./modules/charms/store');
@@ -21,6 +22,22 @@ const { earnPoints, redeemReward, balanceOf, ledgerOf, couponsOf } = require('./
 
 const APP_DIR = path.join(__dirname, '..', '..', 'app');
 const store = loadStore();
+
+function placeWithDeities(place) {
+  const deities = (place.deity_ids || [])
+    .map((id) => store.deities.find((deity) => deity.id === id))
+    .filter(Boolean);
+  return { ...place, deities };
+}
+
+function placeMatchesIntent(place, intent) {
+  if (!intent) return true;
+  if ((place.tags || []).includes(intent)) return true;
+  return (place.deity_ids || []).some((id) => {
+    const deity = store.deities.find((candidate) => candidate.id === id);
+    return deity && (deity.prayer_topics || []).includes(intent);
+  });
+}
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -55,6 +72,11 @@ function serveStatic(req, res) {
   const url = new URL(req.url, 'http://localhost');
   let pathname = decodeURIComponent(url.pathname);
   if (pathname === '/') pathname = '/index.html';
+  if (pathname === '/favicon.ico') {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
   const safe = path.normalize(pathname).replace(/^(\.\.[/\\])+/, '');
   const file = path.join(APP_DIR, safe);
   if (!file.startsWith(APP_DIR)) {
@@ -84,6 +106,31 @@ async function handleApi(req, res, rawBody) {
   if (req.method === 'GET' && url.pathname === '/api/health') {
     sendJson(res, 200, { ok: true, demoMode: config.demoMode });
     log(req, 200);
+    return;
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/line/rich-menu') {
+    const baseUrl = `${req.headers['x-forwarded-proto'] || 'http'}://${req.headers.host || 'localhost:3000'}`;
+    sendJson(res, 200, {
+      installed: false,
+      definition: buildRichMenu(baseUrl),
+      imageUrl: '/assets/images/line-rich-menu.jpg',
+      readyToInstall: Boolean(config.lineChannelAccessToken),
+    });
+    log(req, 200, { event: 'line.rich_menu.preview' });
+    return;
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/line/rich-menu/install') {
+    const baseUrl = `${req.headers['x-forwarded-proto'] || 'http'}://${req.headers.host || 'localhost:3000'}`;
+    try {
+      const result = await installRichMenu({ token: config.lineChannelAccessToken, baseUrl });
+      sendJson(res, 201, { installed: true, ...result });
+      log(req, 201, { event: 'line.rich_menu.install', id: result.richMenuId });
+    } catch (error) {
+      sendJson(res, error.status || 500, { error: error.message || 'install failed' });
+      log(req, error.status || 500, { event: 'line.rich_menu.error' });
+    }
     return;
   }
 
@@ -118,8 +165,9 @@ async function handleApi(req, res, rawBody) {
       log(req, 400);
       return;
     }
+    const baseUrl = `${req.headers['x-forwarded-proto'] || 'http'}://${req.headers.host || 'localhost:3000'}`;
     const results = (body.events || []).map((ev) =>
-      routeLineEvent(ev, { deities: store.deities, events: store.events })
+      routeLineEvent(ev, { deities: store.deities, events: store.events, miniappUrl: `${baseUrl}/miniapp/index.html` })
     );
     // MVP: log intended replies; real push requires LINE_CHANNEL_ACCESS_TOKEN.
     log(req, 200, { event: 'line.webhook', received: (body.events || []).length });
@@ -139,7 +187,7 @@ async function handleApi(req, res, rawBody) {
     sendJson(res, 200, {
       ...result,
       pushPreview: buildFestivalFlex(deity, event, null),
-      mockGps: { lat: 25.033, lng: 121.5654 },
+      mockGps: { lat: 23.4801, lng: 120.4491 },
     });
     log(req, 200, { event: 'demo.simulate' });
     return;
@@ -221,19 +269,19 @@ async function handleApi(req, res, rawBody) {
     const intent = url.searchParams.get('intent') || '';
     const lat = parseCoordParam(url.searchParams.get('lat'));
     const lng = parseCoordParam(url.searchParams.get('lng'));
-    let pool = store.places;
-    if (intent) pool = pool.filter((p) => (p.tags || []).includes(intent));
+    let pool = store.places.filter((place) => place.type === 'temple');
+    if (intent) pool = pool.filter((place) => placeMatchesIntent(place, intent));
     if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
       try {
         const found = findNearbyPlaces(lat, lng, pool, 3);
-        sendJson(res, 200, sortNearbyPlaces(found, intent).slice(0, 10));
+        sendJson(res, 200, sortNearbyPlaces(found, intent).slice(0, 10).map(placeWithDeities));
       } catch (err) {
         sendJson(res, 400, { error: String(err.message) });
       }
     } else {
       const sorted = [...pool].sort((a, b) =>
         (b.is_partner - a.is_partner) || String(a.name).localeCompare(String(b.name)));
-      sendJson(res, 200, sorted.slice(0, 10));
+      sendJson(res, 200, sorted.slice(0, 10).map(placeWithDeities));
     }
     log(req, 200, { event: 'recommendations', intent });
     return;
@@ -436,7 +484,7 @@ async function handleApi(req, res, rawBody) {
       }
       try {
         const found = findNearbyPlaces(lat, lng, pool, Number.isNaN(radius) ? 3 : radius);
-        sendJson(res, 200, sortNearbyPlaces(found, intent));
+        sendJson(res, 200, sortNearbyPlaces(found, intent).map(placeWithDeities));
       } catch (err) {
         sendJson(res, 400, { error: String(err.message) });
       }
@@ -461,7 +509,7 @@ async function handleApi(req, res, rawBody) {
         log(req, 404);
         return;
       }
-      sendJson(res, 200, p);
+      sendJson(res, 200, placeWithDeities(p));
       log(req, 200);
       return;
     }

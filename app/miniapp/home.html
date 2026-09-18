@@ -8,89 +8,67 @@
 </head>
 <body>
   <main class="page">
-    <section class="hero" id="hero">
-      <div class="art">🏯</div>
-      <div class="info">
+    <section class="hero">
+      <div class="info" style="padding-top:18px">
         <span class="date" id="hero-date">載入中…</span>
-        <h2 id="hero-title">神引路</h2>
-        <p id="hero-sub"></p>
+        <h2 id="hero-title">今天，想為什麼祈求？</h2>
+        <p id="hero-sub">從一個願望開始，找到合適的神明與宮廟。</p>
       </div>
       <div class="cta">
-        <a href="/miniapp/index.html">開始祭拜攻略</a>
-        <a href="/miniapp/map.html">附近哪裡可以拜？</a>
+        <a href="/miniapp/index.html"><i class="bi bi-chat-dots"></i> 問 AI</a>
+        <a href="/miniapp/map.html"><i class="bi bi-geo-alt"></i> 找宮廟</a>
       </div>
     </section>
 
-    <h2>今日供品建議</h2>
-    <div class="card" id="offerings">載入中…</div>
-
-    <h2>推薦宮廟</h2>
-    <div class="card" id="temple">載入中…</div>
-
-    <h2>集點中心</h2>
-    <div class="card row" id="charm-entry" style="justify-content:space-between">
-      <span>載入中…</span>
+    <div class="section-head"><h2>你想祈求什麼？</h2><a class="text-link" href="/miniapp/encyclopedia.html">看祭拜百科</a></div>
+    <div class="qr" id="intent-links">
+      <button data-intent="求財">求財</button><button data-intent="事業">事業</button>
+      <button data-intent="平安">平安</button><button data-intent="消災">消災</button>
     </div>
 
-    <h2>神明誕辰</h2>
-    <div class="card" id="deities">載入中…</div>
+    <div class="section-head"><h2>推薦去哪裡拜</h2><a class="text-link" href="/miniapp/map.html">查看地圖</a></div>
+    <div id="temple"><div class="card">載入中…</div></div>
 
-    <p class="disclaimer">不同地區 / 宮廟習俗不同，以下僅供參考，細節請依該宮廟為準。</p>
+    <div class="section-head"><h2>今日神明</h2><a class="text-link" href="/miniapp/encyclopedia.html">全部神明</a></div>
+    <div class="card" id="today-deity">載入中…</div>
+
+    <p class="disclaimer">不同地區 / 宮廟習俗不同，內容僅供參考，參拜細節請依各宮廟公告為準。</p>
   </main>
   <script src="/assets/js/api.js"></script>
-  <script src="/assets/js/miniapp.js"></script>
   <script src="/assets/js/layout.js" data-title="首頁" data-tab="home"></script>
   <script>
+    const typeName = (deity) => (deity && deity.name) || '神明';
+    async function loadRecommendation(intent = '平安') {
+      localStorage.setItem('gg-intent', intent);
+      const recs = await apiGet('/api/recommendations?intent=' + encodeURIComponent(intent));
+      const p = recs[0];
+      const box = document.getElementById('temple');
+      if (!p) { box.innerHTML = '<div class="card">目前沒有符合的宮廟資料</div>'; return; }
+      const matches = (p.deities || []).filter(d => (d.prayer_topics || []).includes(intent));
+      box.innerHTML = `<div class="card"><div class="row" style="justify-content:space-between;align-items:flex-start">` +
+        `<div><h3>${p.name}</h3><div class="meta">${p.address}</div></div><span class="tag">${intent}</span></div>` +
+        `<p>推薦理由：奉祀 ${(matches.length ? matches : p.deities || []).map(typeName).join('、') || '適合祈福的神明'}。</p>` +
+        `<div class="row"><a class="btn secondary icon-btn" style="flex:1" href="/miniapp/place.html?id=${p.id}"><i class="bi bi-building"></i>看詳情</a>` +
+        `<a class="btn icon-btn" style="flex:1" href="/miniapp/map.html?intent=${encodeURIComponent(intent)}"><i class="bi bi-map"></i>看地圖</a></div></div>`;
+    }
+    document.getElementById('intent-links').addEventListener('click', (event) => {
+      const button = event.target.closest('[data-intent]');
+      if (!button) return;
+      document.querySelectorAll('[data-intent]').forEach(b => b.classList.toggle('ghost', b !== button));
+      loadRecommendation(button.dataset.intent).catch(() => {});
+    });
     (async () => {
       try {
-        const [today, deities] = await Promise.all([
-          apiGet('/api/events/today'),
-          apiGet('/api/deities'),
-        ]);
-        const ev = today.events[0];
-        const deity = (ev && ev.deity) || deities.find(d => d.id === 'tudigong') || deities[0];
-
-        document.getElementById('hero-date').textContent =
-          `農曆 ${today.lunarDate}` + (today.mocked ? ' · Demo' : '');
-        document.getElementById('hero-title').textContent =
-          ev ? `${deity.name} ${ev.event_name}` : `今日宜拜 ${deity.name}`;
-        document.getElementById('hero-sub').textContent =
-          `主祈：${(deity.prayer_topics || []).join('、') || '平安'}`;
-
-        document.getElementById('offerings').innerHTML =
-          (deity.common_offerings || []).map(o =>
-            `<div class="row" style="justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line)">` +
-            `<span>${o}</span><a class="btn" style="padding:6px 12px;font-size:13px" href="/miniapp/map.html?offering=${encodeURIComponent(o)}">尋找店家</a></div>`).join('') || '—';
-
-        // Featured temple: partners first (no GPS needed on home).
-        const recs = await apiGet('/api/recommendations?intent=' + encodeURIComponent((deity.prayer_topics || [])[0] || ''));
-        const temple = recs.find(p => p.type === 'temple') || recs[0];
-        document.getElementById('temple').innerHTML = temple
-          ? `<h3>${temple.name} ${temple.is_partner ? '<span class="tag partner">合作</span>' : ''}</h3>` +
-            `<div class="meta">${temple.address || ''} ${temple.opening_hours ? '· ' + temple.opening_hours : ''}</div>` +
-            (temple.promotion ? `<p>🎁 ${temple.promotion}</p>` : '') +
-            `<a class="btn block" href="https://www.google.com/maps/dir/?api=1&destination=${temple.latitude},${temple.longitude}">導航前往</a>`
-          : '暫無推薦宮廟';
-
-        try {
-          const [pts, my] = await Promise.all([
-            apiGet(`/api/points?userIdHash=${MiniApp.uid()}`),
-            apiGet(`/api/amulets?userIdHash=${MiniApp.uid()}`),
-          ]);
-          const held = my.filter(c => c.status === 'held').length;
-          document.getElementById('charm-entry').innerHTML =
-            `<span>🪙 <strong>${pts.balance}</strong> 點 · 🧧 ${held} 枚平安符</span><a class="btn" href="/miniapp/charms.html">集點</a>`;
-        } catch (_) {
-          document.getElementById('charm-entry').innerHTML =
-            `<span>🪙 點數集點</span><a class="btn" href="/miniapp/charms.html">集點</a>`;
-        }
-
-        document.getElementById('deities').innerHTML = deities.map(d =>
-          `<div class="row" style="justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line)">` +
-          `<span>${d.name}</span><span class="meta">農曆 ${d.lunar_birthday || '—'}</span></div>`).join('');
-      } catch (e) {
-        document.getElementById('hero-date').textContent = '連線失敗';
-        document.getElementById('hero-sub').textContent = '請確認 server 有啟動 (npm run dev)';
+        const [today, deities] = await Promise.all([apiGet('/api/events/today'), apiGet('/api/deities')]);
+        const event = today.events[0];
+        const deity = (event && event.deity) || deities.find(d => d.id === 'tudigong') || deities[0];
+        document.getElementById('hero-date').textContent = `農曆 ${today.lunarDate}` + (today.mocked ? ' · Demo' : '');
+        document.getElementById('today-deity').innerHTML = `<h3>${deity.name}</h3><div class="meta">農曆聖誕：${deity.lunar_birthday || '依宮廟公告'}</div>` +
+          `<p>常見祈求：${(deity.prayer_topics || []).join('、')}</p>` +
+          `<a class="text-link" href="/miniapp/encyclopedia.html?id=${deity.id}">查看祭拜方式 <i class="bi bi-chevron-right"></i></a>`;
+        await loadRecommendation(localStorage.getItem('gg-intent') || '平安');
+      } catch (error) {
+        document.getElementById('temple').innerHTML = '<div class="card">資料載入失敗，請稍後再試。</div>';
       }
     })();
   </script>

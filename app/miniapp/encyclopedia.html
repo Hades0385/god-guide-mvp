@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>神引路 — 祭拜百科</title><link rel="stylesheet" href="/assets/css/style.css"></head>
+<body>
+  <main class="page" style="padding-bottom:20px">
+    <p class="meta">查神明、供品、參拜步驟與注意事項。</p>
+    <div class="deity-grid" id="deity-grid"><div class="card">載入中…</div></div>
+    <section id="article" style="display:none">
+      <h2 id="article-name"></h2><div class="card" id="article-body"></div>
+      <div class="row"><a class="btn secondary icon-btn" id="ask-ai" style="flex:1"><i class="bi bi-chat-dots"></i>問 AI</a><a class="btn icon-btn" id="find-temple" style="flex:1"><i class="bi bi-geo-alt"></i>找宮廟</a></div>
+    </section>
+    <p class="disclaimer">民俗做法因地區與宮廟而異，本百科為資料整理，實際參拜請依廟方指示。</p>
+  </main>
+  <script src="/assets/js/api.js"></script><script src="/assets/js/layout.js" data-title="祭拜百科" data-back="/miniapp/more.html"></script>
+  <script>
+    let deities=[];
+    function showArticle(id) {
+      const d=deities.find(x=>x.id===id); if(!d)return;
+      document.querySelectorAll('.deity-card').forEach(c=>c.style.borderColor=c.dataset.id===id?'var(--red)':'var(--line)');
+      document.getElementById('article').style.display='block'; document.getElementById('article-name').textContent=d.name;
+      document.getElementById('article-body').innerHTML=`<div class="meta">別稱：${(d.aliases||[]).join('、')||'—'} · 農曆聖誕：${d.lunar_birthday||'依宮廟公告'}</div>`+
+        `<h3 style="margin-top:14px">常見祈求</h3><div class="deity-pill-list">${(d.prayer_topics||[]).map(x=>`<span class="deity-pill">${x}</span>`).join('')}</div>`+
+        `<h3 style="margin-top:14px">供品建議</h3><p>${(d.common_offerings||[]).join('、')||'依宮廟公告'}</p>`+
+        `<h3>參拜步驟</h3><ol>${(d.ritual_steps||[]).map(x=>`<li>${x}</li>`).join('')}</ol>`+
+        `<h3>注意事項</h3><p>${(d.taboos||[]).join('；')||'保持恭敬，依廟方指示。'}</p><p class="meta">來源：${(d.source_notes||[]).join('；')}</p>`;
+      document.getElementById('ask-ai').href=`/miniapp/index.html?deity=${d.id}`;
+      document.getElementById('find-temple').href=`/miniapp/map.html?intent=${encodeURIComponent((d.prayer_topics||[])[0]||'')}`;
+      document.getElementById('article').scrollIntoView({behavior:'smooth'});
+    }
+    (async()=>{ deities=await apiGet('/api/deities'); document.getElementById('deity-grid').innerHTML=deities.map(d=>`<a class="deity-card" data-id="${d.id}" href="#${d.id}"><i class="bi bi-brightness-high symbol"></i><h3>${d.name}</h3><p>${(d.prayer_topics||[]).slice(0,3).join(' · ')}</p></a>`).join(''); document.getElementById('deity-grid').onclick=e=>{const a=e.target.closest('[data-id]');if(a){e.preventDefault();showArticle(a.dataset.id);}}; const id=new URLSearchParams(location.search).get('id')||location.hash.slice(1); if(id)showArticle(id); })().catch(()=>{document.getElementById('deity-grid').innerHTML='<div class="card">百科載入失敗</div>';});
+  </script>
+</body></html>

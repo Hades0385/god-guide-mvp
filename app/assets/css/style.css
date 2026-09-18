@@ -2,12 +2,12 @@
   --red: #8b0000;
   --red-dark: #6d0000;
   --gold: #c9a227;
-  --bg: #faf6ec;
+  --bg: #f7f5f0;
   --card: #ffffff;
   --ink: #2b2b2b;
   --muted: #8a8171;
   --line: #ece2c8;
-  --radius: 14px;
+  --radius: 8px;
   --header-h: 56px;
   --tabbar-h: 64px;
 }
@@ -40,7 +40,7 @@ body {
   border: 0;
   background: transparent;
   color: #fff;
-  font-size: 22px;
+  font-size: 20px;
   line-height: 1;
   padding: 8px;
   cursor: pointer;
@@ -56,8 +56,8 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.topbar .title.left { text-align: left; margin-right: 0; }
-.topbar .brand { font-size: 13px; opacity: .85; font-weight: 400; }
+.topbar .brand { display: block; font-size: 10px; opacity: .75; font-weight: 400; line-height: 1; }
+.topbar .back, .topbar-spacer { width: 40px; flex: 0 0 40px; }
 
 /* ---- page body ---- */
 .page {
@@ -83,7 +83,7 @@ body {
   border-radius: var(--radius);
   overflow: hidden;
   margin: 4px 0 10px;
-  background: linear-gradient(135deg, #8b0000 0%, #b3402e 55%, #c9a227 130%);
+  background: #8b0000;
   color: #fff;
   position: relative;
 }
@@ -123,7 +123,7 @@ body {
   background: var(--red);
   color: #fff;
   border: 0;
-  border-radius: 999px;
+  border-radius: 8px;
   padding: 10px 18px;
   font-size: 15px;
   cursor: pointer;
@@ -212,7 +212,7 @@ input[type="text"], select {
   text-decoration: none;
   font-size: 11px;
 }
-.tabbar a .ico { font-size: 22px; line-height: 1; }
+.tabbar a .bi { font-size: 21px; line-height: 1; }
 .tabbar a.active { color: var(--red); font-weight: 700; }
 
 /* ---- misc ---- */
@@ -231,6 +231,64 @@ pre.reply {
 .row { display: flex; gap: 8px; align-items: center; }
 .row > input { flex: 1; min-width: 0; }
 
+/* ---- reusable navigation and icon patterns ---- */
+.icon-btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
+.section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 18px 0 8px; }
+.section-head h2 { margin: 0; }
+.text-link { color: var(--red); font-size: 13px; font-weight: 700; text-decoration: none; }
+.menu-list { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.menu-item { display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 10px; min-height: 58px; padding: 10px 14px; color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--line); }
+.menu-item:last-child { border-bottom: 0; }
+.menu-item > .bi:first-child { color: var(--red); font-size: 21px; text-align: center; }
+.menu-item .bi-chevron-right { color: var(--muted); }
+.menu-item strong { display: block; font-size: 15px; }
+.menu-item small { display: block; color: var(--muted); font-size: 12px; }
+
+/* ---- chat ---- */
+.chat-page { min-height: 100vh; display: flex; flex-direction: column; }
+.chat-log { display: flex; flex-direction: column; gap: 12px; padding-bottom: 100px; }
+.message { display: flex; gap: 8px; align-items: flex-end; }
+.message.user { justify-content: flex-end; }
+.avatar { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; color: #fff; background: var(--red); flex: 0 0 32px; }
+.bubble { max-width: 82%; padding: 10px 12px; border-radius: 8px; background: #fff; border: 1px solid var(--line); font-size: 14px; white-space: pre-wrap; }
+.message.user .bubble { color: #fff; background: var(--red); border-color: var(--red); }
+.chat-composer { position: fixed; z-index: 40; left: 0; right: 0; bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom)); background: #fff; border-top: 1px solid var(--line); padding: 8px max(12px, calc((100vw - 560px) / 2 + 12px)); }
+.chat-composer .row { max-width: 536px; margin: 0 auto; }
+.chat-composer button { width: 42px; height: 42px; padding: 0; flex: 0 0 42px; }
+.strategy { max-width: 92%; margin-left: 40px; background: #fff; border: 1px solid var(--gold); border-radius: var(--radius); overflow: hidden; }
+.strategy summary { cursor: pointer; padding: 11px 12px; font-weight: 700; color: var(--red); }
+.strategy-body { padding: 0 12px 12px; }
+.strategy-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.strategy-item { border: 1px solid var(--line); padding: 8px; border-radius: 6px; font-size: 13px; }
+.strategy-steps { margin: 8px 0; padding-left: 22px; font-size: 13px; }
+
+/* ---- shop and checkout ---- */
+.product-card { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: start; }
+.product-card .price { font-size: 18px; color: var(--red); font-weight: 800; white-space: nowrap; }
+.cart-bar { position: fixed; left: 0; right: 0; bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom)); z-index: 42; background: #fff; border-top: 1px solid var(--line); padding: 8px max(14px, calc((100vw - 560px) / 2 + 14px)); }
+.cart-bar-inner { max-width: 532px; margin: 0 auto; display: flex; gap: 10px; align-items: center; }
+.cart-bar .summary { flex: 1; min-width: 0; }
+.qty-control { display: inline-grid; grid-template-columns: 34px 40px 34px; align-items: center; text-align: center; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.qty-control button { height: 34px; border: 0; background: #fff; color: var(--red); font-size: 18px; }
+.form-grid { display: grid; gap: 12px; }
+.field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+.field input, .field select, .field textarea { width: 100%; font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+.payment-option { display: flex; align-items: center; gap: 10px; min-height: 48px; border: 1px solid var(--line); padding: 10px; border-radius: 6px; margin-bottom: 8px; }
+.order-line { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+
+/* ---- encyclopedia and temple details ---- */
+.deity-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.deity-card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; text-decoration: none; color: var(--ink); }
+.deity-card .symbol { font-size: 24px; color: var(--red); }
+.deity-card h3 { font-size: 15px; margin: 5px 0 2px; }
+.deity-card p { font-size: 12px; color: var(--muted); margin: 0; }
+.deity-pill-list { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.deity-pill { border: 1px solid var(--gold); background: #fffaf0; color: #6e5300; padding: 5px 9px; border-radius: 999px; font-size: 12px; }
+
+@media (min-width: 700px) {
+  .tabbar { left: 50%; width: 560px; transform: translateX(-50%); border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
+}
+
 /* ---- fullscreen map ---- */
 .mapfull {
   position: fixed;
@@ -242,7 +300,7 @@ pre.reply {
 .mapfull #map { height: 100%; border: 0; border-radius: 0; }
 .mapfull .mapstatus {
   position: absolute;
-  top: 8px; left: 8px; right: 8px;
+  top: 8px; left: 50px; right: 8px;
   z-index: 500;
   background: rgba(255,255,255,.94);
   border: 1px solid var(--line);
@@ -254,7 +312,7 @@ pre.reply {
 }
 .mapchips {
   position: absolute;
-  top: 48px; left: 8px; right: 8px;
+  top: 48px; left: 50px; right: 8px;
   z-index: 500;
   display: flex;
   gap: 6px;

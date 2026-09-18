@@ -13,7 +13,9 @@ function tmpFile() {
 }
 
 const partnerShop = places.find((p) => p.is_partner && p.type !== 'temple');
-const partnerTemple = places.find((p) => p.is_partner && p.type === 'temple');
+// Compatibility fixture: the current UI no longer displays amulets, but the
+// legacy API remains covered for existing clients.
+const partnerTemple = { ...places.find((p) => p.type === 'temple'), is_partner: true };
 const plainPlace = places.find((p) => !p.is_partner);
 
 test('collectCharm: partner shop issues a held charm', () => {

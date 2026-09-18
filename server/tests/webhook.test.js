@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const { verifyLineSignature, signForTest } = require('../src/middleware/lineSignature');
 const { routeLineEvent } = require('../src/modules/line/webhook');
 const { buildFestivalFlex, DISCLAIMER } = require('../src/modules/line/flex');
+const { buildRichMenu } = require('../src/modules/line/richMenu');
 const deities = require('../data/deities.json');
 const events = require('../data/events.json');
 
@@ -36,4 +37,11 @@ test('buildFestivalFlex: contains disclaimer and miniapp buttons', () => {
   const body = JSON.stringify(msg.contents);
   assert.ok(body.includes(DISCLAIMER.slice(0, 6)));
   assert.ok(body.includes('map.html'));
+});
+
+test('buildRichMenu: maps six areas to Mini App pages', () => {
+  const menu = buildRichMenu('https://guide.example');
+  assert.equal(menu.areas.length, 6);
+  assert.ok(menu.areas.every((area) => area.action.uri.startsWith('https://guide.example/miniapp/')));
+  assert.deepEqual(menu.size, { width: 1527, height: 1030 });
 });

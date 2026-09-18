@@ -8,7 +8,7 @@ LINE Mini App (pure HTML/CSS/JS) + Node.js (native http + lunar-javascript) + JS
 Copy-Item .env.example .env
 npm install
 npm run dev   # http://localhost:3000/miniapp/index.html
-npm test      # 20 tests: distance, calendar, webhook, chat, checklist
+npm test      # unit + integration tests
 ```
 
 Set `DEMO_MODE=true` in `.env` for fixed Tudigong festival (lunar 二月初二) + mock GPS.
@@ -38,27 +38,28 @@ ngrok http 3000
 
 | 概念 | Demo 入口 | 正式接法（得獎後再填） |
 |------|----------|----------------------|
-| AI 祝禱小助手 | 諮詢頁 §6：輸入姓名＋台語 → 生成＋分享 | 填 `LLM_API_KEY` 即自動改走 LLM 潤飾 |
+| AI 問事 | 對話式問答，AI 回覆可展開供品與祭拜步驟元件 | 填 `LLM_API_KEY` 即自動改走 LLM 潤飾 |
 | 智慧零售＋LINE Pay | 購物頁：套組（店家＋內容物）→ 綠色 LINE Pay 模擬結帳 → 集點中心看餘額 | 串 LINE Pay API（`LINE_PAY_CHANNEL_ID/SECRET`），把 `pay-confirm` 改打真正的 payment request |
 | Flex 社群分享 | 祝禱區「分享」鈕：LIFF `shareTargetPicker` → 系統分享 → 剪貼簿三級 fallback | Mini App 改用 LIFF 時載入 `liff SDK` 並 `liff.init`，第一級自動生效 |
 | Beacon 進店推播 | Demo 台「模擬 Beacon 進店」＋ `POST /api/beacon/enter` | 買 LINE Beacon 硬體 → 取 `BEACON_HWID` → 在 LINE 後台綁定 → webhook 收 `beacon` 事件後改打真推播（目前僅回傳 Flex 預覽） |
-| 點數經濟閉環 | 集點中心：消費集點（NT$10=1點）→ 50點兌平安符／30點兌折扣券 | 點數規則（`AMULET_COST/COUPON_COST`）與核銷碼對接店家 POS |
+| 點數經濟閉環 | 結帳後集點（NT$10=1點）→ 集點中心兌折扣券 | 點數規則與核銷碼對接店家 POS |
 
-## App 頁面（6 Tab + 1 子頁）
+## App 頁面（5 個主分頁 + 次要功能）
 
-- `miniapp/home.html` 🏠 — 今日祭拜神明宮廟卡 + 供品（每項「尋找店家」直達篩選地圖）+ 推薦宮廟 + 集點入口（`/` 轉址至此）
-- `miniapp/index.html` 💬 — 諮詢：選神明 → intent → AI 回覆 → **供品清單**（勾選/儲存，每項「哪裡買」按鈕）＋ **祭拜流程**（步驟指引）＋ **AI 祝禱小助手**（姓名＋國語/台語＋分享給家人）
-- `miniapp/map.html` 🗺️ — 全屏地圖：分類 chips（全部/宮廟/供品店）＋四色標記（紅宮廟/綠供品/橘金紙/粉花店，金框＝合作）＋底部彈窗＋供品篩選（`?offering=` 顯示可買店家＋清除）
-- `miniapp/shop.html` 🛒 — **購買**：祭拜套組列表（販售店家＋內容物＋價格）＋ LINE Pay 模擬結帳（結帳即集點）
-- `miniapp/charms.html` 🪙 — **集點中心**：餘額＋兌換平安符/折扣券＋持有物＋紀錄（購買已獨立至購物頁）
-- `miniapp/place.html?id=` — 店家詳情**子頁**（店內商品價目＋導航/集點；有返回鍵 ← 地圖）
-- `miniapp/demo.html` 🧰 — Demo 控制台（10 按鈕：含 Beacon 進店模擬、祝禱詞生成）
+- `miniapp/home.html` — 首頁：祈求意圖、神明關聯宮廟推薦、今日神明
+- `miniapp/index.html` — AI 問事：對話訊息串，回答內可展開祭拜攻略元件
+- `miniapp/map.html` — 找宮廟：嘉義市真實宮廟與供品店家，依奉祀神明＋祈求意圖推薦
+- `miniapp/shop.html` — 購物：祭拜套組、購物車；`checkout.html` 為完整 Demo 結帳流程
+- `miniapp/more.html` — 更多：祭拜百科、集點中心、LINE 圖文選單與 Demo 控制台
+- `miniapp/encyclopedia.html` — 祭拜百科：神明、供品、步驟、注意事項與來源
+- `miniapp/place.html?id=` — 地點詳情：宮廟奉祀神明、導航、帶入宮廟背景詢問 AI
+- `miniapp/line-menu.html` — LINE Rich Menu 預覽與安裝狀態
 
 ## Layout
 
-- `app/assets/js/layout.js` — 頂欄 + Tab Bar；返回鍵僅子頁（`data-back`）顯示
+- `app/assets/js/layout.js` — 頂欄 + 5 項 Tab Bar，使用 Bootstrap Icons；返回鍵僅子頁顯示
 - `server/src/server.js` — static host + `/api/*`
-- `server/data/*.json` — deities, events, places, products (seed); checklists/conversations/amulets/points/coupons are gitignored runtime files
+- `server/data/*.json` — deities, events, 嘉義市 places, products；執行期資料檔已 gitignore
 
 ## API (Phase 1–4)
 
@@ -81,4 +82,5 @@ ngrok http 3000
 - `GET /api/places/:id`
 - `GET /api/events/today` → `{ solarDate, lunarDate, events (with deity), festivalToday, mocked }`
 - `POST /api/line/webhook` → LINE verify (`x-line-signature` HMAC) + routes follow/message/postback; without `LINE_CHANNEL_SECRET` verification is skipped (dev only)
+- `GET /api/line/rich-menu` → 圖文選單定義與安裝狀態；`POST /api/line/rich-menu/install` → 上傳圖片並設為預設 Rich Menu
 - `POST /api/demo/simulate` → DEMO_MODE only; festival + Flex push preview + mock GPS

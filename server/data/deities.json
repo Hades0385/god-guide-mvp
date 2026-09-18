@@ -68,5 +68,47 @@
     "taboos": [],
     "related_shops": [],
     "source_notes": ["Demo seed skeleton"]
+  },
+  {
+    "id": "chenghuang",
+    "name": "城隍爺",
+    "aliases": ["綏靖侯城隍尊神"],
+    "birthday": "",
+    "lunar_birthday": "八月初二",
+    "main_beliefs": ["守護城境", "正義", "消災"],
+    "prayer_topics": ["平安", "消災", "正義"],
+    "common_offerings": ["鮮花", "水果", "清茶", "金紙"],
+    "ritual_steps": ["淨手整衣", "依宮廟動線上香", "稟明姓名與來意", "誠心祈求", "答謝離開"],
+    "taboos": ["勿喧嘩嬉鬧", "祭拜順序依廟方指示"],
+    "related_shops": ["flower_shop", "offering_shop", "joss_paper_shop"],
+    "source_notes": ["嘉義城隍廟官方資料與內政部臺灣宗教文化地圖；細節以廟方公告為準"]
+  },
+  {
+    "id": "dizang",
+    "name": "地藏王菩薩",
+    "aliases": ["地藏菩薩"],
+    "birthday": "",
+    "lunar_birthday": "七月三十",
+    "main_beliefs": ["慈悲救度", "消災", "祈福"],
+    "prayer_topics": ["平安", "消災", "祈福"],
+    "common_offerings": ["鮮花", "水果", "清茶"],
+    "ritual_steps": ["淨手整衣", "合掌問訊", "稟明姓名與祈求", "誠心禮拜", "答謝離開"],
+    "taboos": ["保持莊重", "供品與儀式依庵方規定"],
+    "related_shops": ["flower_shop", "offering_shop"],
+    "source_notes": ["嘉義市寺廟名冊與九華山地藏庵公開資料；細節以庵方公告為準"]
+  },
+  {
+    "id": "caishen",
+    "name": "財神",
+    "aliases": ["文財尊神", "文財神"],
+    "birthday": "",
+    "lunar_birthday": "依宮廟公告",
+    "main_beliefs": ["財運", "事業", "積德賜福"],
+    "prayer_topics": ["求財", "事業"],
+    "common_offerings": ["鮮花", "水果", "清茶", "發粿", "金紙"],
+    "ritual_steps": ["淨手整衣", "依宮廟動線上香", "稟明姓名與職業", "說明正當祈求", "答謝離開"],
+    "taboos": ["避免不切實際或損人的祈求", "儀式依廟方指示"],
+    "related_shops": ["flower_shop", "offering_shop", "joss_paper_shop"],
+    "source_notes": ["中央研究院文化資源地理資訊系統嘉義文財殿田野資料；細節以廟方公告為準"]
   }
 ]

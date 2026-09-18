@@ -20,7 +20,7 @@ function tmpFiles() {
 }
 
 const shop = places.find((p) => p.is_partner && p.type === 'offering_shop');
-const temple = places.find((p) => p.is_partner && p.type === 'temple');
+const temple = { ...places.find((p) => p.type === 'temple'), is_partner: true };
 const nonPartner = places.find((p) => !p.is_partner);
 
 test('earnPoints: retail spend earns NT$/10, temple rejected', () => {

@@ -1,60 +1,43 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>神引路 — 店家詳情</title>
-  <link rel="stylesheet" href="/assets/css/style.css">
-</head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>神引路 — 地點詳情</title><link rel="stylesheet" href="/assets/css/style.css"></head>
 <body>
-  <main class="page" style="padding-bottom:16px">
+  <main class="page" style="padding-bottom:20px">
     <div class="card" id="detail">載入中…</div>
-    <h2>店內商品</h2>
-    <div id="products"><div class="card">載入中…</div></div>
-    <div class="actions row" id="actions" style="display:none">
-      <a class="btn secondary" id="nav" href="#" style="flex:1">導航</a>
-      <a class="btn" id="collect" style="flex:1;display:none" href="/miniapp/shop.html">🛒 購買套組</a>
+    <section id="deity-section" style="display:none"><h2>這裡供奉的神明</h2><div id="deities"></div></section>
+    <section id="products-section"><h2>可選購品項</h2><div id="products"><div class="card">載入中…</div></div></section>
+    <div class="row" id="actions" style="display:none;margin-top:12px">
+      <a class="btn secondary icon-btn" id="nav" href="#" style="flex:1"><i class="bi bi-signpost"></i>導航</a>
+      <a class="btn icon-btn" id="ask" href="#" style="flex:1"><i class="bi bi-chat-dots"></i>問 AI 更多</a>
     </div>
-    <p class="disclaimer">不同地區 / 宮廟習俗不同，資訊僅供參考。</p>
+    <p class="disclaimer">地點與奉祀資料來自公開資料；開放時間與祭拜規則請以現場公告為準。</p>
   </main>
-  <script src="/assets/js/api.js"></script>
-  <script src="/assets/js/miniapp.js"></script>
-  <script src="/assets/js/layout.js" data-title="店家詳情" data-back="/miniapp/map.html"></script>
+  <script src="/assets/js/api.js"></script><script src="/assets/js/layout.js" data-title="地點詳情" data-back="/miniapp/map.html"></script>
   <script>
     (async () => {
       const id = new URLSearchParams(location.search).get('id');
-      if (!id) { document.getElementById('detail').textContent = '缺少店家 id'; return; }
+      if (!id) { document.getElementById('detail').textContent = '缺少地點 id'; return; }
       try {
         const p = await apiGet(`/api/places/${id}`);
-        document.getElementById('detail').innerHTML =
-          `<h3>${p.name} ${p.is_partner ? '<span class="tag partner">合作</span>' : ''}</h3>` +
-          `<div><span class="tag">${p.type}</span> ${(p.tags || []).map(t => `<span class="tag">${t}</span>`).join('')}</div>` +
-          `<p class="meta">${[p.address, p.opening_hours, p.phone].filter(Boolean).join(' · ')}</p>` +
-          (p.description ? `<p>${p.description}</p>` : '') +
-          (p.promotion ? `<p>🎁 ${p.promotion}</p>` : '');
-        const box = document.getElementById('actions');
-        box.style.display = 'flex';
-        document.getElementById('nav').href =
-          `https://www.google.com/maps/dir/?api=1&destination=${p.latitude},${p.longitude}`;
-        // 集點制取代免費領符：合作店家導向集點中心消費集點。
-        if (p.is_partner) {
-          document.getElementById('collect').style.display = 'block';
-        }
-        try {
+        const isTemple = p.type === 'temple';
+        document.getElementById('detail').innerHTML = `<h3>${p.name}</h3><div><span class="tag">${isTemple ? '宮廟' : '供品店家'}</span></div>` +
+          `<p class="meta">${[p.address,p.opening_hours,p.phone].filter(Boolean).join(' · ')}</p><p>${p.description || ''}</p>` +
+          (p.source_url ? `<a class="text-link" href="${p.source_url}">查看資料來源 <i class="bi bi-box-arrow-up-right"></i></a>` : '');
+        if (isTemple) {
+          document.getElementById('deity-section').style.display = 'block';
+          document.getElementById('products-section').style.display = 'none';
+          document.getElementById('deities').innerHTML = (p.deities || []).map(d => `<div class="card"><h3>${d.name}</h3><div class="deity-pill-list">${(d.prayer_topics || []).map(t=>`<span class="deity-pill">${t}</span>`).join('')}</div><p class="meta">${(d.main_beliefs || []).join('、')}</p></div>`).join('') || '<div class="card">奉祀資料整理中</div>';
+        } else {
           const products = await apiGet(`/api/places/${id}/products`);
-          document.getElementById('products').innerHTML = products.length
-            ? products.map((pr) =>
-              `<div class="card row" style="justify-content:space-between">` +
-              `<span><strong>${pr.name}</strong><div class="meta">${pr.description || ''}</div></span>` +
-              `<span><strong>NT$${pr.price}</strong><span class="meta">/${pr.unit || '份'}</span></span></div>`).join('')
-            : '<div class="card">此店家暫無商品資訊（宮廟不販售供品）</div>';
-        } catch (_) {
-          document.getElementById('products').innerHTML = '<div class="card">商品載入失敗</div>';
+          document.getElementById('products').innerHTML = products.length ? products.map(pr => `<div class="card product-card"><div><strong>${pr.name}</strong><div class="meta">${pr.description}</div></div><span class="price">NT$${pr.price}</span></div>`).join('') : '<div class="card">暫無商品資料</div>';
         }
-      } catch (e) {
-        document.getElementById('detail').textContent = '載入失敗：' + e.message;
-      }
+        document.getElementById('actions').style.display = 'flex';
+        document.getElementById('nav').href = `https://www.google.com/maps/dir/?api=1&destination=${p.latitude},${p.longitude}`;
+        const deityId = (p.deities && p.deities[0] && p.deities[0].id) || '';
+        const ask = document.getElementById('ask');
+        ask.href = isTemple ? `/miniapp/index.html?place=${p.id}&deity=${deityId}` : '/miniapp/shop.html';
+        ask.innerHTML = isTemple ? '<i class="bi bi-chat-dots"></i>問 AI 更多' : '<i class="bi bi-bag"></i>前往購物';
+      } catch (error) { document.getElementById('detail').textContent = '載入失敗：' + error.message; }
     })();
   </script>
-</body>
-</html>
+</body></html>

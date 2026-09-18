@@ -1,8 +1,8 @@
 'use strict';
 // LINE Mini App bridge with graceful fallbacks:
-// Bridge -> navigator.geolocation -> DEMO mock (25.0330, 121.5654).
+// Bridge -> navigator.geolocation -> Chiayi City fallback.
 const MiniApp = {
-  mock: { lat: 25.033, lng: 121.5654 },
+  mock: { lat: 23.4801, lng: 120.4491 },
   // MVP single-user identity. Persisted locally, sent as userIdHash.
   uid() {
     let id = localStorage.getItem('gg-uid');
