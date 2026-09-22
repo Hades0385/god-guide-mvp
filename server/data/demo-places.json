@@ -1,0 +1,3 @@
+[
+  { "id": "demo-store", "name": "神引路示範商店", "type": "offering_shop", "latitude": null, "longitude": null, "address": "線上流程示範，無實體取貨門市", "phone": "", "opening_hours": "", "description": "僅供模擬購物與集點。", "is_partner": true, "is_demo": true, "promotion": "", "image_url": "", "tags": [] }
+]

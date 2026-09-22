@@ -5,5 +5,7 @@ server/data/conversations.json
 server/data/amulets.json
 server/data/points.json
 server/data/coupons.json
+server/data/orders.json
+.screenshots/
 *.db
 .DS_Store

@@ -22,7 +22,7 @@ function loadStore() {
   return {
     deities: readJson('deities.json', []),
     events: readJson('events.json', []),
-    places: readJson('places.json', []),
+    places: [...readJson('places.json', []), ...readJson('demo-places.json', [])],
     products: readJson('products.json', []),
     sets: readJson('sets.json', []),
   };

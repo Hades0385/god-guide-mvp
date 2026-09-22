@@ -52,7 +52,7 @@ function ledgerOf(userIdHash = '', file = POINTS_FILE) {
   return readList(file).filter((e) => (e.userIdHash || '') === (userIdHash || ''));
 }
 
-function earnPoints({ userIdHash = '', place, amountNt = 0 }, files = {}) {
+function earnPoints({ userIdHash = '', place, amountNt = 0, orderId }, files = {}) {
   const pointsFile = files.pointsFile || POINTS_FILE;
   if (!place) throw errWith(404, 'place not found');
   if (!place.is_partner || place.type === 'temple') {
@@ -60,7 +60,10 @@ function earnPoints({ userIdHash = '', place, amountNt = 0 }, files = {}) {
   }
   const earned = Math.max(1, Math.floor(Number(amountNt || 0) * EARN_PER_NTD));
   const list = readList(pointsFile);
+  const previous = orderId && list.find(e => e.orderId === orderId && e.userIdHash === userIdHash);
+  if (previous) return { entry: previous, balance: balanceOf(userIdHash, pointsFile) };
   const entry = {
+    ...(orderId ? { orderId } : {}),
     id: crypto.randomUUID(),
     userIdHash,
     delta: earned,

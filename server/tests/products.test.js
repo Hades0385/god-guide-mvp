@@ -37,20 +37,21 @@ test('sets seed: every set resolves to a shop and lists contents', () => {
   }
 });
 
-test('products seed: all shopIds resolve to real places', () => {
+test('products seed: all shopIds resolve to demo shops, never unverified real sellers', () => {
   const ids = new Set(store.places.map((p) => p.id));
   for (const pr of store.products) {
     assert.ok(ids.has(pr.shopId), `orphan product ${pr.id}`);
     assert.ok(pr.price > 0, `bad price ${pr.id}`);
+    assert.equal(store.places.find(p => p.id === pr.shopId).is_demo, true);
   }
 });
 
-test('offering filter logic: 鮮花 matches real Chiayi flower shops', () => {
+test('demo offerings resolve only to the demo store', () => {
   const sellerIds = new Set(
     store.products.filter((pr) => (pr.offerings || []).includes('鮮花')).map((pr) => pr.shopId),
   );
   const pool = store.places.filter((p) => p.type !== 'temple' && sellerIds.has(p.id));
-  assert.deepEqual(pool.map((p) => p.id).sort(), ['chiayi-meiling-flower']);
+  assert.deepEqual(pool.map((p) => p.id).sort(), ['demo-store']);
   assert.ok(pool.length >= 1);
   assert.ok(pool.every((p) => p.type !== 'temple'));
 });

@@ -1,82 +1,15 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>神引路 — 找宮廟</title>
-  <link rel="stylesheet" href="/assets/css/style.css">
-  <link rel="stylesheet" href="/assets/vendor/leaflet/leaflet.css">
-</head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>神引路 — 找宮廟</title><link rel="stylesheet" href="/assets/css/style.css"><link rel="stylesheet" href="/assets/vendor/leaflet/leaflet.css"></head>
 <body>
-  <main class="mapfull">
-    <div id="map"></div>
-    <div class="mapstatus" id="status">載入嘉義市資料…</div>
-    <div class="mapchips" id="chips">
-      <button data-cat="all" class="chip active">全部</button>
-      <button data-cat="temple" class="chip">宮廟</button>
-      <button data-cat="shop" class="chip">供品店</button>
-    </div>
-    <div class="offer-banner" id="offerbanner" style="display:none"></div>
-  </main>
-  <div class="sheet-backdrop" id="backdrop"></div>
-  <section class="sheet" id="sheet">
-    <div class="grab"></div>
-    <h3 id="s-name">—</h3><div id="s-tags"></div>
-    <p class="meta" id="s-meta"></p><p id="s-desc"></p><div id="s-deities"></div>
-    <div class="actions">
-      <a class="btn secondary icon-btn" id="s-nav" href="#"><i class="bi bi-signpost"></i>導航</a>
-      <a class="btn icon-btn" id="s-detail" href="#"><i class="bi bi-arrow-right-circle"></i>詳情</a>
-    </div>
-  </section>
-  <script src="/assets/vendor/leaflet/leaflet.js"></script>
-  <script src="/assets/js/api.js"></script><script src="/assets/js/miniapp.js"></script><script src="/assets/js/map.js"></script>
-  <script src="/assets/js/layout.js" data-title="找宮廟" data-tab="map"></script>
-  <script>
-    const $ = id => document.getElementById(id);
-    const state = { pos: { lat: 23.4801, lng: 120.4491 }, intent: '', offering: '', cat: 'all', allPlaces: [], provider: null };
-    const typeLabel = { temple: '宮廟', offering_shop: '供品店', joss_paper_shop: '金香店', flower_shop: '花店' };
-    function closeSheet() { $('sheet').classList.remove('open'); $('backdrop').classList.remove('open'); }
-    $('backdrop').addEventListener('click', closeSheet);
-    async function openSheet(id) {
-      const p = await apiGet(`/api/places/${id}`);
-      $('s-name').textContent = p.name;
-      $('s-tags').innerHTML = `<span class="tag">${typeLabel[p.type] || p.type}</span>` + (p.is_partner ? '<span class="tag partner">合作</span>' : '');
-      $('s-meta').textContent = [p.address, p.opening_hours, p.phone].filter(Boolean).join(' · ');
-      $('s-desc').textContent = p.description || '';
-      $('s-deities').innerHTML = p.type === 'temple' ? `<div class="deity-pill-list">${(p.deities || []).map(d => `<span class="deity-pill">${d.name}</span>`).join('')}</div>` : '';
-      $('s-nav').href = `https://www.google.com/maps/dir/?api=1&destination=${p.latitude},${p.longitude}`;
-      $('s-detail').href = `/miniapp/place.html?id=${p.id}`;
-      $('sheet').classList.add('open'); $('backdrop').classList.add('open');
-    }
-    function visiblePlaces() {
-      if (state.cat === 'temple') return state.allPlaces.filter(p => p.type === 'temple');
-      if (state.cat === 'shop') return state.allPlaces.filter(p => p.type !== 'temple');
-      return state.allPlaces;
-    }
-    function renderMarkers() {
-      state.provider.clearMarkers();
-      visiblePlaces().forEach(p => state.provider.addMarker({ id:p.id, lat:p.latitude, lng:p.longitude, type:p.type, is_partner:p.is_partner, onClick:openSheet }));
-    }
-    function renderBanner() {
-      const bar = $('offerbanner');
-      if (!state.intent && !state.offering) { bar.style.display = 'none'; return; }
-      const label = state.offering ? `可買到「${state.offering}」` : `「${state.intent}」推薦結果`;
-      bar.style.display = 'flex'; bar.innerHTML = `<span>${label} · ${state.allPlaces.length} 個地點</span><button id="clear-filter">清除</button>`;
-      $('clear-filter').onclick = () => { state.intent = ''; state.offering = ''; history.replaceState(null, '', '/miniapp/map.html'); reloadPlaces(); };
-    }
-    async function reloadPlaces() {
-      const q = new URLSearchParams({ lat:state.pos.lat, lng:state.pos.lng, radius:'12', intent:state.intent, ...(state.offering ? { offering:state.offering } : {}) });
-      state.allPlaces = await apiGet(`/api/places/nearby?${q}`); renderMarkers(); renderBanner();
-    }
-    $('chips').addEventListener('click', e => { const b=e.target.closest('[data-cat]'); if(!b)return; state.cat=b.dataset.cat; document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('active',c===b)); renderMarkers(); });
-    (async () => {
-      state.intent = new URLSearchParams(location.search).get('intent') || localStorage.getItem('gg-intent') || '';
-      state.offering = new URLSearchParams(location.search).get('offering') || '';
-      state.provider = new LeafletProvider();
-      await state.provider.initialize('map', { center:[state.pos.lat,state.pos.lng], zoom:14 });
-      $('status').textContent = '嘉義市 · 真實地點資料' + (state.intent ? ` · ${state.intent}優先` : '');
-      await reloadPlaces();
-    })().catch(() => { $('status').textContent = '地圖載入失敗，請檢查網路連線'; });
-  </script>
-</body>
-</html>
+<main class="page map-page">
+  <div class="map-tools"><label>祈求 <select id="intent"><option value="">全部</option><option>求財</option><option>事業</option><option>平安</option><option>消災</option></select></label><button id="locate" class="btn secondary icon-btn"><i class="bi bi-crosshair"></i>使用定位</button></div>
+  <div class="map-tools" id="chips"><button data-cat="all" class="chip active">全部</button><button data-cat="temple" class="chip">宮廟</button><button data-cat="shop" class="chip">供品店</button><button id="clear-filter" class="chip">清除篩選</button></div>
+  <p class="meta" id="status" role="status">嘉義市 · 預設距離市中心 3 公里</p>
+  <p class="meta" id="filter-label"></p>
+  <div id="map" style="height:360px"></div>
+  <p id="tile-error" class="meta" hidden>底圖暫時無法載入，仍可使用下方地點清單與導航。</p>
+  <div class="section-head"><h2>地點清單</h2><span class="meta" id="count"></span></div><div id="places"></div>
+</main>
+<script src="/assets/vendor/leaflet/leaflet.js"></script><script src="/assets/js/api.js"></script><script src="/assets/js/map.js"></script><script src="/assets/js/layout.js" data-title="找宮廟" data-tab="map"></script><script src="/assets/js/map-page.js"></script>
+</body></html>

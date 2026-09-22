@@ -39,6 +39,7 @@ function findNearbyPlaces(userLat, userLng, places, radiusKm = 3) {
     throw new TypeError('userLat/userLng must be numbers');
   }
   return places
+    .filter((p) => Number.isFinite(p.latitude) && Number.isFinite(p.longitude))
     .map((p) => ({
       ...p,
       distanceKm: calculateDistance(userLat, userLng, p.latitude, p.longitude),

@@ -5,12 +5,16 @@ class LeafletProvider {
   constructor() { this.map = null; this.markers = []; }
   async initialize(container, opts) {
     if (typeof L === 'undefined') throw new Error('Leaflet CDN not loaded');
-    this.map = L.map(container).setView(opts.center, opts.zoom || 15);
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(this.map);
+    this.map = L.map(container, { zoomControl: false }).setView(opts.center, opts.zoom || 15);
+    L.control.zoom({ position: 'bottomleft' }).addTo(this.map);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    }).on('tileerror', () => opts.onTileError?.()).addTo(this.map);
   }
   showUserLocation(lat, lng) {
     if (!this.map) return;
-    L.marker([lat, lng]).addTo(this.map).bindPopup('你在這裡');
+    if (this.userMarker) this.userMarker.remove();
+    this.userMarker = L.marker([lat, lng]).addTo(this.map).bindPopup('你在這裡');
   }
   addMarker(m) {
     if (!this.map) return;
@@ -28,7 +32,7 @@ class LeafletProvider {
       iconSize: [18, 18],
       iconAnchor: [9, 9],
     });
-    const marker = L.marker([m.lat, m.lng], { icon }).addTo(this.map);
+    const marker = L.marker([m.lat, m.lng], { icon, title: m.title || '地點', alt: m.title || '地點' }).addTo(this.map);
     marker._placeId = m.id;
     // Bottom sheet owns the detail UI; popup would double up.
     marker.on('click', () => { if (typeof m.onClick === 'function') m.onClick(m.id); });

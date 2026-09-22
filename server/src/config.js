@@ -27,8 +27,10 @@ const config = {
   lineChannelSecret: process.env.LINE_CHANNEL_SECRET || '',
   lineChannelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN || '',
   miniappChannelId: process.env.MINIAPP_CHANNEL_ID || '',
-  llmApiKey: process.env.LLM_API_KEY || '',
-  llmModel: process.env.LLM_MODEL || 'gpt-4o-mini',
+  publicBaseUrl: process.env.PUBLIC_BASE_URL || '',
+  adminToken: process.env.ADMIN_TOKEN || '',
+  geminiApiKey: process.env.GEMINI_API_KEY || '',
+  geminiModel: process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
 };
 
 module.exports = { config };

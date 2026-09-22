@@ -3,18 +3,19 @@
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>神引路 — 購物</title><link rel="stylesheet" href="/assets/css/style.css"></head>
 <body>
   <main class="page" style="padding-bottom:140px">
-    <div class="row" style="justify-content:space-between"><p class="meta">嘉義在地店家 · 商品與價格為結帳流程 Demo</p><a class="text-link" href="/miniapp/checkout.html">購物車</a></div>
+    <div class="row" style="justify-content:space-between"><p class="meta">示範商店 · 不實際扣款或通知店家</p><a class="text-link" href="/miniapp/checkout.html">購物車</a></div>
     <div id="sets"><div class="card">載入中…</div></div>
     <p class="disclaimer">目前商品與付款均為 Demo，不會實際扣款或向店家送單；實際品項請以店家公告為準。</p>
   </main>
   <div class="cart-bar"><div class="cart-bar-inner"><div class="summary"><strong id="cart-count">尚未選購</strong><div class="meta" id="cart-total">可加入多個套組</div></div><a class="btn icon-btn" id="checkout" href="/miniapp/checkout.html"><i class="bi bi-credit-card"></i>前往結帳</a></div></div>
   <script src="/assets/js/api.js"></script><script src="/assets/js/layout.js" data-title="購物" data-tab="shop"></script>
+  <script src="/assets/js/cart.js"></script>
   <script>
     const CART_KEY='gg-cart'; let sets=[];
-    const readCart=()=>JSON.parse(localStorage.getItem(CART_KEY)||'[]');
+    const readCart=()=>Cart.resolve(Cart.read(),sets);
     const writeCart=cart=>{localStorage.setItem(CART_KEY,JSON.stringify(cart));renderCart();};
     function renderCart(){const cart=readCart();const qty=cart.reduce((n,x)=>n+x.qty,0);const total=cart.reduce((n,x)=>n+x.price*x.qty,0);document.getElementById('cart-count').textContent=qty?`${qty} 件商品`:'尚未選購';document.getElementById('cart-total').textContent=qty?`合計 NT$${total}`:'可加入多個套組';}
-    function addToCart(set){const cart=readCart();const found=cart.find(x=>x.id===set.id);if(found)found.qty+=1;else cart.push({id:set.id,name:set.name,price:set.price,qty:1,shopId:set.shop.id,shopName:set.shop.name});writeCart(cart);const b=document.querySelector(`[data-add="${set.id}"]`);b.innerHTML='<i class="bi bi-check2"></i>已加入';setTimeout(()=>b.innerHTML='<i class="bi bi-bag-plus"></i>加入購物車',900);}
+    function addToCart(set){const cart=readCart();const found=cart.find(x=>x.id===set.id);if(found)found.qty=Math.min(20,found.qty+1);else cart.push({id:set.id,name:set.name,price:set.price,qty:1,shopId:set.shop.id,shopName:set.shop.name});writeCart(cart);const b=document.querySelector(`[data-add="${set.id}"]`);b.innerHTML='<i class="bi bi-check2"></i>已加入';setTimeout(()=>b.innerHTML='<i class="bi bi-bag-plus"></i>加入購物車',900);}
     document.addEventListener('click',e=>{const b=e.target.closest('[data-add]');if(!b)return;const set=sets.find(x=>x.id===b.dataset.add);if(set&&set.shop)addToCart(set);});
     (async()=>{try{sets=await apiGet('/api/sets');document.getElementById('sets').innerHTML=sets.map(s=>`<div class="card product-card"><div><h3>${s.name}</h3><div class="meta">${s.shop?s.shop.name:'店家資料缺失'} · ${s.shop&&s.shop.address||''}</div><p>${s.description||''}</p><div class="meta">${(s.contents||[]).join('、')}</div></div><div style="text-align:right"><div class="price">NT$${s.price}</div><button class="btn icon-btn" data-add="${s.id}" style="margin-top:10px"><i class="bi bi-bag-plus"></i>加入購物車</button></div></div>`).join('')||'<div class="card">目前沒有可購買套組</div>';}catch(e){document.getElementById('sets').innerHTML='<div class="card">商品載入失敗</div>';}renderCart();})();
   </script>

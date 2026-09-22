@@ -1,91 +1,56 @@
 'use strict';
-
-// Chat service: Intent -> Knowledge Base -> Prompt -> LLM (or mock) -> Safety check.
-// MVP: rule-based reply from JSON knowledge. If LLM_API_KEY is set and not
-// DEMO_MODE, attempt OpenAI chat completion with knowledge context via native
-// fetch; any failure falls back to the rule-based reply (never 500 the chat).
-
 const { detectIntent } = require('./intent');
 const { findDeity, buildChecklistDraft, buildReplyText } = require('./knowledge');
 const { DISCLAIMER } = require('../line/flex');
+const { generate, DEFAULT_MODEL } = require('./gemini');
 
-function buildSystemPrompt(deity, intent) {
+function buildSystemPrompt(deity, intent, place, deities = []) {
   return [
-    '你是「神引路」傳統祭祀知識整理助手，只能引用知識庫內容回答，不可編造民俗。',
-    `神明：${deity ? `${deity.name}（${(deity.aliases || []).join('/')}），農曆${deity.lunar_birthday || ''}` : '未知'}`,
-    `祈求主題：${intent}`,
-    `知識庫供品：${deity ? (deity.common_offerings || []).join('、') : ''}`,
-    `知識庫步驟：${deity ? (deity.ritual_steps || []).join('＞') : ''}`,
-    `禁忌：${deity ? (deity.taboos || []).join('；') : ''}`,
-    `必須引用出處：${deity ? (deity.source_notes || []).join('；') : ''}`,
-    '結尾必須附上地域差異聲明，不做權威或法律判斷。',
+    '你是神引路祭祀知識助手，使用繁體中文。只能依提供的知識庫回答；不確定請直說。不可編造神蹟、儀式、店家優惠或保證效果。',
+    '需要攻略時呼叫 show_worship_guide。工具的 deityId 必須取自提供的神明資料。',
+    '請引用 source_notes，並提醒不同地區及宮廟習俗不同。宮廟奉祀資料可能不完整，不要聲稱為完整名單。',
+    JSON.stringify({ selectedDeity: deity, intent, place: place ? { name: place.name, description: place.description, deity_ids: place.deity_ids, source: place.source_url } : null, knowledge: deities }),
   ].join('\n');
 }
 
-async function tryLlmReply({ systemPrompt, userMessage, apiKey, model }) {
-  const r = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' },
-    body: JSON.stringify({
-      model: model || 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userMessage },
-      ],
-      max_tokens: 500,
-    }),
-  });
-  if (!r.ok) throw new Error(`LLM ${r.status}`);
-  const data = await r.json();
-  const text = data.choices && data.choices[0] && data.choices[0].message
-    ? data.choices[0].message.content
-    : '';
-  if (!text || !text.trim()) throw new Error('LLM empty');
-  return text.trim();
-}
-
-function safetyCheck(text, deity) {
-  let out = String(text || '');
-  if (!out.includes(DISCLAIMER)) out += `\n${DISCLAIMER}`;
-  return {
-    text: out,
-    sourceNotes: (deity && deity.source_notes) || [],
-  };
-}
-
-async function handleChat({ message, deityId, intent }, ctx = {}) {
-  const { deities = [], demoMode = false, llmApiKey = '', llmModel = 'gpt-4o-mini' } = ctx;
-  const text = String(message || '').trim();
-  if (!text) {
-    const err = new Error('message is required');
-    err.status = 400;
-    throw err;
+async function handleChat(body = {}, ctx = {}) {
+  const { message, deityId, intent, placeId, history = [] } = body || {};
+  const { deities = [], places = [], demoMode = false, geminiApiKey = '', geminiModel = DEFAULT_MODEL } = ctx;
+  if (typeof message !== 'string' || !message.trim() || message.length > 2000) throw Object.assign(new Error('請輸入 1 至 2000 字的問題'), { status: 400 });
+  if (!Array.isArray(history) || history.length > 12 || history.some(t => !t || !['user', 'assistant'].includes(t.role) || typeof t.text !== 'string' || t.text.length > 5000)) throw Object.assign(new Error('對話紀錄格式錯誤'), { status: 400 });
+  const place = placeId ? places.find(p => p.id === placeId && p.type === 'temple') : null;
+  if (placeId && !place) throw Object.assign(new Error('找不到宮廟'), { status: 404 });
+  const text = message.trim();
+  const previousIntent = history.length ? detectIntent(history.map(t => t.text).join('\n')) : '綜合';
+  let resolvedIntent = detectIntent(text, intent);
+  if (resolvedIntent === '綜合') resolvedIntent = previousIntent;
+  const mentioned = deities.find(d => [d.name, ...(d.aliases || [])].some(name => text.includes(name)));
+  let deity = mentioned || findDeity(deities, deityId || place?.deity_ids?.[0]);
+  let guideDeity = deity;
+  let reply = buildReplyText(deity, resolvedIntent);
+  if (place) {
+    const names = (place.deity_ids || []).map(id => deities.find(d => d.id === id)?.name).filter(Boolean);
+    reply = `${place.name}目前已收錄的奉祀神明：${names.join('、')}。\n${place.description}\n${reply}`;
   }
-  const resolvedIntent = detectIntent(text, intent);
-  const deity = findDeity(deities, deityId);
-  const systemPrompt = deity ? buildSystemPrompt(deity, resolvedIntent) : '';
-  let reply;
+  let showGuide = /攻略|供品|怎麼拜|如何拜|準備|步驟|清單/.test(text) || resolvedIntent !== '綜合';
   let llmStatus = 'mock';
-  if (llmApiKey && !demoMode && deity) {
+  let fallbackReason = demoMode ? 'demo' : 'missing_key';
+  if (geminiApiKey && !demoMode && deity) {
     try {
-      reply = await tryLlmReply({ systemPrompt, userMessage: text, apiKey: llmApiKey, model: llmModel });
-      llmStatus = 'llm';
-    } catch {
-      reply = buildReplyText(deity, resolvedIntent);
-    }
-  } else {
-    reply = buildReplyText(deity, resolvedIntent);
+      const result = await generate({ apiKey: geminiApiKey, model: geminiModel, message: text, history,
+        systemPrompt: buildSystemPrompt(deity, resolvedIntent, place, deities), deityIds: deities.map(d => d.id),
+        fetchImpl: ctx.fetchImpl });
+      if (result.text) reply = result.text;
+      showGuide = Boolean(result.guideId);
+      guideDeity = deities.find(d => d.id === result.guideId) || deity;
+      llmStatus = 'llm'; fallbackReason = null;
+    } catch { fallbackReason = 'unavailable'; }
   }
-  const checked = safetyCheck(reply, deity);
-  return {
-    intent: resolvedIntent,
-    deity,
-    reply: checked.text,
-    sourceNotes: checked.sourceNotes,
-    checklistDraft: buildChecklistDraft(deity, resolvedIntent),
-    quickReplies: ['求財', '事業', '平安', '綜合'],
-    llmStatus,
-  };
+  if (!reply.includes(DISCLAIMER)) reply += '\n' + DISCLAIMER;
+  const sourceNotes = [...new Set([...(guideDeity?.source_notes || []), ...(place?.source_url ? [place.source_url] : [])])];
+  return { intent: resolvedIntent, deity: guideDeity, reply, sourceNotes, place: place ? { id: place.id, name: place.name } : null,
+    checklistDraft: buildChecklistDraft(guideDeity, resolvedIntent),
+    components: showGuide && guideDeity ? [{ type: 'worship_guide', deityId: guideDeity.id }] : [],
+    quickReplies: ['求財', '事業', '平安', '綜合'], llmStatus, fallbackReason, model: geminiModel };
 }
-
 module.exports = { handleChat, buildSystemPrompt };

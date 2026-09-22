@@ -11,10 +11,12 @@ const { loadStore } = require('./utils/store');
 const { findNearbyPlaces, sortNearbyPlaces, parseCoordParam } = require('./utils/distance');
 const { getTodayFestival } = require('./modules/events/calendar');
 const { verifyLineSignature } = require('./middleware/lineSignature');
-const { routeLineEvent } = require('./modules/line/webhook');
+const { processLineEvent } = require('./modules/line/delivery');
 const { buildFestivalFlex, buildCouponFlex } = require('./modules/line/flex');
 const { buildRichMenu, installRichMenu } = require('./modules/line/richMenu');
+const { enrichPlace, matchesIntent } = require('./modules/places/recommend');
 const { handleChat } = require('./modules/chat/service');
+const { createOrder } = require('./modules/orders/store');
 const { createChecklist, toggleItem } = require('./modules/checklist/store');
 const { collectCharm, redeemCharm, listByUser } = require('./modules/charms/store');
 const { handlePrayer } = require('./modules/prayer/generator');
@@ -23,20 +25,10 @@ const { earnPoints, redeemReward, balanceOf, ledgerOf, couponsOf } = require('./
 const APP_DIR = path.join(__dirname, '..', '..', 'app');
 const store = loadStore();
 
-function placeWithDeities(place) {
-  const deities = (place.deity_ids || [])
-    .map((id) => store.deities.find((deity) => deity.id === id))
-    .filter(Boolean);
-  return { ...place, deities };
-}
+function placeWithDeities(place) { return enrichPlace(place, store.deities); }
 
 function placeMatchesIntent(place, intent) {
-  if (!intent) return true;
-  if ((place.tags || []).includes(intent)) return true;
-  return (place.deity_ids || []).some((id) => {
-    const deity = store.deities.find((candidate) => candidate.id === id);
-    return deity && (deity.prayer_topics || []).includes(intent);
-  });
+  return matchesIntent(enrichPlace(place, store.deities, intent), intent);
 }
 
 const MIME = {
@@ -55,7 +47,7 @@ function log(req, status, extra) {
   const line = JSON.stringify({
     t: new Date().toISOString(),
     m: req.method,
-    u: req.url,
+    u: new URL(req.url, 'http://localhost').pathname,
     s: status,
     ...(extra ? { extra } : {}),
   });
@@ -103,6 +95,17 @@ async function handleApi(req, res, rawBody) {
   const url = new URL(req.url, 'http://localhost');
   const parts = url.pathname.split('/').filter(Boolean); // ['api','deities',':id']
 
+  if (req.method === 'POST' && url.pathname === '/api/orders') {
+    try {
+      const order = createOrder(JSON.parse(rawBody.toString('utf8')), store);
+      sendJson(res, 201, order);
+      log(req, 201, { event: 'order.create', id: order.id });
+    } catch (error) {
+      sendJson(res, error instanceof SyntaxError ? 400 : error.status || 500, { error: error.message });
+    }
+    return;
+  }
+
   if (req.method === 'GET' && url.pathname === '/api/health') {
     sendJson(res, 200, { ok: true, demoMode: config.demoMode });
     log(req, 200);
@@ -110,19 +113,22 @@ async function handleApi(req, res, rawBody) {
   }
 
   if (req.method === 'GET' && url.pathname === '/api/line/rich-menu') {
-    const baseUrl = `${req.headers['x-forwarded-proto'] || 'http'}://${req.headers.host || 'localhost:3000'}`;
+    const baseUrl = config.publicBaseUrl || 'https://example.com';
     sendJson(res, 200, {
-      installed: false,
+      installed: null,
       definition: buildRichMenu(baseUrl),
       imageUrl: '/assets/images/line-rich-menu.jpg',
-      readyToInstall: Boolean(config.lineChannelAccessToken),
+      readyToInstall: Boolean(config.lineChannelAccessToken && config.publicBaseUrl && config.adminToken),
     });
     log(req, 200, { event: 'line.rich_menu.preview' });
     return;
   }
 
   if (req.method === 'POST' && url.pathname === '/api/line/rich-menu/install') {
-    const baseUrl = `${req.headers['x-forwarded-proto'] || 'http'}://${req.headers.host || 'localhost:3000'}`;
+    if (!config.adminToken || req.headers.authorization !== `Bearer ${config.adminToken}`) {
+      sendJson(res, 401, { error: '管理員授權必要' }); return;
+    }
+    const baseUrl = config.publicBaseUrl;
     try {
       const result = await installRichMenu({ token: config.lineChannelAccessToken, baseUrl });
       sendJson(res, 201, { installed: true, ...result });
@@ -155,7 +161,8 @@ async function handleApi(req, res, rawBody) {
         return;
       }
     } else {
-      log(req, 200, { event: 'line.webhook.no_secret_skip_verify' });
+      sendJson(res, 503, { error: 'LINE_CHANNEL_SECRET is required' });
+      return;
     }
     let body;
     try {
@@ -165,13 +172,26 @@ async function handleApi(req, res, rawBody) {
       log(req, 400);
       return;
     }
-    const baseUrl = `${req.headers['x-forwarded-proto'] || 'http'}://${req.headers.host || 'localhost:3000'}`;
-    const results = (body.events || []).map((ev) =>
-      routeLineEvent(ev, { deities: store.deities, events: store.events, miniappUrl: `${baseUrl}/miniapp/index.html` })
-    );
-    // MVP: log intended replies; real push requires LINE_CHANNEL_ACCESS_TOKEN.
-    log(req, 200, { event: 'line.webhook', received: (body.events || []).length });
-    sendJson(res, 200, { ok: true, results });
+    if (!Array.isArray(body.events) || body.events.some(ev => !ev || typeof ev.type !== 'string')) {
+      sendJson(res, 400, { error: 'events array required' }); return;
+    }
+    if (config.lineChannelAccessToken && !/^https:\/\//.test(config.publicBaseUrl)) {
+      sendJson(res, 503, { error: 'PUBLIC_BASE_URL must be HTTPS' }); return;
+    }
+    const baseUrl = config.publicBaseUrl || 'https://example.com';
+    try {
+      const results = [];
+      for (const event of body.events) results.push(await processLineEvent(event, {
+        deities: store.deities, places: store.places, events: store.events, baseUrl,
+        miniappUrl: `${baseUrl}/miniapp/index.html`, token: config.lineChannelAccessToken,
+        demoMode: config.demoMode, geminiApiKey: config.geminiApiKey, geminiModel: config.geminiModel,
+      }));
+      log(req, 200, { event: 'line.webhook', received: body.events.length });
+      sendJson(res, 200, { ok: true, results });
+    } catch {
+      log(req, 502, { event: 'line.webhook.delivery_failed' });
+      sendJson(res, 502, { error: 'LINE reply failed' });
+    }
     return;
   }
 
@@ -205,9 +225,10 @@ async function handleApi(req, res, rawBody) {
     try {
       const result = await handleChat(body, {
         deities: store.deities,
+        places: store.places,
+        geminiApiKey: config.geminiApiKey,
+        geminiModel: config.geminiModel,
         demoMode: config.demoMode,
-        llmApiKey: config.llmApiKey,
-        llmModel: config.llmModel,
       });
       sendJson(res, 200, result);
       log(req, 200, { event: 'chat', intent: result.intent, llm: result.llmStatus });
@@ -270,18 +291,20 @@ async function handleApi(req, res, rawBody) {
     const lat = parseCoordParam(url.searchParams.get('lat'));
     const lng = parseCoordParam(url.searchParams.get('lng'));
     let pool = store.places.filter((place) => place.type === 'temple');
+    const deityId = url.searchParams.get('deity');
+    if (deityId) pool = pool.filter(p => (p.deity_ids || []).includes(deityId));
     if (intent) pool = pool.filter((place) => placeMatchesIntent(place, intent));
     if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
       try {
         const found = findNearbyPlaces(lat, lng, pool, 3);
-        sendJson(res, 200, sortNearbyPlaces(found, intent).slice(0, 10).map(placeWithDeities));
+        sendJson(res, 200, sortNearbyPlaces(found, intent).slice(0, 10).map(p => enrichPlace(p, store.deities, intent)));
       } catch (err) {
         sendJson(res, 400, { error: String(err.message) });
       }
     } else {
       const sorted = [...pool].sort((a, b) =>
         (b.is_partner - a.is_partner) || String(a.name).localeCompare(String(b.name)));
-      sendJson(res, 200, sorted.slice(0, 10).map(placeWithDeities));
+      sendJson(res, 200, sorted.slice(0, 10).map(p => enrichPlace(p, store.deities, intent)));
     }
     log(req, 200, { event: 'recommendations', intent });
     return;
@@ -336,8 +359,8 @@ async function handleApi(req, res, rawBody) {
       const result = await handlePrayer(body, {
         deities: store.deities,
         demoMode: config.demoMode,
-        llmApiKey: config.llmApiKey,
-        llmModel: config.llmModel,
+        geminiApiKey: config.geminiApiKey,
+        geminiModel: config.geminiModel,
       });
       sendJson(res, 200, result);
       log(req, 200, { event: 'prayer', topic: result.topic, llm: result.llmStatus });
@@ -388,6 +411,11 @@ async function handleApi(req, res, rawBody) {
   if (req.method === 'GET' && url.pathname === '/api/coupons') {
     sendJson(res, 200, couponsOf(url.searchParams.get('userIdHash') || ''));
     log(req, 200, { event: 'coupons.list' });
+    return;
+  }
+
+  if (req.method === 'GET' && url.pathname === '/api/reward-shops') {
+    sendJson(res, 200, store.places.filter(p => p.is_partner && p.type !== 'temple').map(p => ({ id:p.id, name:p.name, is_demo:p.is_demo })));
     return;
   }
 
@@ -461,6 +489,13 @@ async function handleApi(req, res, rawBody) {
   }
 
   if (req.method === 'GET' && parts[0] === 'api' && parts[1] === 'places') {
+    if (parts.length === 2) {
+      const offering = url.searchParams.get('offering');
+      const types = { '鮮花': 'flower_shop', '水果': 'offering_shop', '金紙': 'joss_paper_shop' };
+      const places = store.places.filter(p => !p.is_demo && (!offering || p.type === types[offering]));
+      sendJson(res, 200, places.map(placeWithDeities));
+      return;
+    }
     if (parts[2] === 'nearby') {
       const lat = parseCoordParam(url.searchParams.get('lat'));
       const lng = parseCoordParam(url.searchParams.get('lng'));
@@ -472,19 +507,18 @@ async function handleApi(req, res, rawBody) {
         log(req, 400);
         return;
       }
-      let pool = store.places;
+      let pool = store.places.filter(p => !p.is_demo);
+      if (intent && intent !== '綜合') pool = pool.filter(p => p.type !== 'temple' || placeMatchesIntent(p, intent));
       if (type) pool = pool.filter((p) => p.type === type);
       const offering = url.searchParams.get('offering') || '';
       if (offering) {
         // Only shops can sell; match via products.json offerings link.
-        const sellerIds = new Set(
-          store.products.filter((pr) => (pr.offerings || []).includes(offering)).map((pr) => pr.shopId),
-        );
-        pool = pool.filter((p) => p.type !== 'temple' && sellerIds.has(p.id));
+        const types = { '鮮花': 'flower_shop', '水果': 'offering_shop', '金紙': 'joss_paper_shop' };
+        pool = pool.filter(p => p.type === types[offering]);
       }
       try {
         const found = findNearbyPlaces(lat, lng, pool, Number.isNaN(radius) ? 3 : radius);
-        sendJson(res, 200, sortNearbyPlaces(found, intent).map(placeWithDeities));
+        sendJson(res, 200, sortNearbyPlaces(found, intent).map(p => enrichPlace(p, store.deities, intent)));
       } catch (err) {
         sendJson(res, 400, { error: String(err.message) });
       }
@@ -534,7 +568,8 @@ const server = http.createServer(async (req, res) => {
     const rawBody = (req.method === 'POST' || req.method === 'PATCH' || req.method === 'PUT')
       ? await readRawBody(req)
       : Buffer.alloc(0);
-    handleApi(req, res, rawBody);
+    try { await handleApi(req, res, rawBody); }
+    catch { if (!res.headersSent) sendJson(res, 500, { error: 'Internal server error' }); }
     return;
   }
   if (req.method !== 'GET') {

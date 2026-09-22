@@ -4,7 +4,7 @@
 <body>
   <main class="page" style="padding-bottom:20px">
     <div class="card" id="detail">載入中…</div>
-    <section id="deity-section" style="display:none"><h2>這裡供奉的神明</h2><div id="deities"></div></section>
+    <section id="deity-section" style="display:none"><h2>已收錄的奉祀神明</h2><div id="deities"></div></section>
     <section id="products-section"><h2>可選購品項</h2><div id="products"><div class="card">載入中…</div></div></section>
     <div class="row" id="actions" style="display:none;margin-top:12px">
       <a class="btn secondary icon-btn" id="nav" href="#" style="flex:1"><i class="bi bi-signpost"></i>導航</a>
@@ -29,14 +29,14 @@
           document.getElementById('deities').innerHTML = (p.deities || []).map(d => `<div class="card"><h3>${d.name}</h3><div class="deity-pill-list">${(d.prayer_topics || []).map(t=>`<span class="deity-pill">${t}</span>`).join('')}</div><p class="meta">${(d.main_beliefs || []).join('、')}</p></div>`).join('') || '<div class="card">奉祀資料整理中</div>';
         } else {
           const products = await apiGet(`/api/places/${id}/products`);
-          document.getElementById('products').innerHTML = products.length ? products.map(pr => `<div class="card product-card"><div><strong>${pr.name}</strong><div class="meta">${pr.description}</div></div><span class="price">NT$${pr.price}</span></div>`).join('') : '<div class="card">暫無商品資料</div>';
+          document.getElementById('products').innerHTML = products.length ? products.map(pr => `<div class="card product-card"><div><strong>${pr.name}</strong><div class="meta">${pr.description}</div></div><span class="price">NT$${pr.price}</span></div>`).join('') : '<div class="card">實際商品與售價請洽店家</div>';
         }
         document.getElementById('actions').style.display = 'flex';
-        document.getElementById('nav').href = `https://www.google.com/maps/dir/?api=1&destination=${p.latitude},${p.longitude}`;
+        document.getElementById('nav').href = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(p.address)}`;
         const deityId = (p.deities && p.deities[0] && p.deities[0].id) || '';
         const ask = document.getElementById('ask');
-        ask.href = isTemple ? `/miniapp/index.html?place=${p.id}&deity=${deityId}` : '/miniapp/shop.html';
-        ask.innerHTML = isTemple ? '<i class="bi bi-chat-dots"></i>問 AI 更多' : '<i class="bi bi-bag"></i>前往購物';
+        ask.href = isTemple ? `/miniapp/index.html?place=${p.id}&deity=${deityId}` : `tel:${p.phone}`;
+        ask.innerHTML = isTemple ? '<i class="bi bi-chat-dots"></i>問 AI 更多' : '<i class="bi bi-telephone"></i>聯絡店家';
       } catch (error) { document.getElementById('detail').textContent = '載入失敗：' + error.message; }
     })();
   </script>

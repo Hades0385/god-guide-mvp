@@ -17,56 +17,7 @@
     <div class="row"><input id="message" type="text" placeholder="輸入你的問題…" autocomplete="off"><button class="btn icon-btn" aria-label="送出"><i class="bi bi-send"></i></button></div>
   </form>
   <script src="/assets/js/api.js"></script><script src="/assets/js/layout.js" data-title="AI 問事" data-tab="chat"></script>
-  <script>
-    const $ = id => document.getElementById(id);
-    let selectedDeity = new URLSearchParams(location.search).get('deity') || 'tudigong';
-    let currentPlace = null;
-
-    function addMessage(text, role = 'assistant') {
-      const row = document.createElement('div');
-      row.className = `message ${role}`;
-      if (role === 'assistant') row.innerHTML = '<div class="avatar"><i class="bi bi-stars"></i></div>';
-      const bubble = document.createElement('div'); bubble.className = 'bubble'; bubble.textContent = text; row.appendChild(bubble);
-      $('chat-log').appendChild(row); row.scrollIntoView({ behavior:'smooth', block:'end' }); return row;
-    }
-
-    function addStrategy(result) {
-      const box = document.createElement('details'); box.className = 'strategy'; box.open = true;
-      const offerings = result.checklistDraft.offerings || []; const steps = result.checklistDraft.guide || [];
-      box.innerHTML = `<summary><i class="bi bi-journal-check"></i> 查看 ${result.deity.name} 祭拜攻略</summary>` +
-        `<div class="strategy-body"><strong>供品建議</strong><div class="strategy-grid">${offerings.map(o=>`<div class="strategy-item">${o.label}<a class="text-link" style="display:block" href="/miniapp/map.html?offering=${encodeURIComponent(o.label)}">哪裡買</a></div>`).join('')}</div>` +
-        `<strong style="display:block;margin-top:10px">參拜步驟</strong><ol class="strategy-steps">${steps.map(s=>`<li>${s.label}</li>`).join('')}</ol>` +
-        `<div class="row"><a class="btn secondary icon-btn" style="flex:1" href="/miniapp/encyclopedia.html?id=${result.deity.id}"><i class="bi bi-book"></i>看百科</a>` +
-        `<a class="btn icon-btn" style="flex:1" href="/miniapp/map.html?intent=${encodeURIComponent(result.intent)}"><i class="bi bi-geo-alt"></i>找宮廟</a></div>` +
-        `<p class="meta">出處：${(result.sourceNotes || []).join('；') || '知識庫整理'}</p></div>`;
-      $('chat-log').appendChild(box); box.scrollIntoView({ behavior:'smooth', block:'end' });
-    }
-
-    async function ask(message) {
-      if (!message.trim()) return;
-      addMessage(message, 'user'); $('message').value = '';
-      const waiting = addMessage('正在整理知識庫資料…');
-      try {
-        const contextual = currentPlace ? `${message}\n我正在查看${currentPlace.name}，請依該廟奉祀神明回答。` : message;
-        const result = await apiPost('/api/chat', { message:contextual, deityId:selectedDeity });
-        localStorage.setItem('gg-intent', result.intent);
-        waiting.querySelector('.bubble').textContent = result.reply;
-        addStrategy(result);
-      } catch (error) { waiting.querySelector('.bubble').textContent = '目前無法取得回答，請稍後再試。'; }
-    }
-
-    $('composer').addEventListener('submit', event => { event.preventDefault(); ask($('message').value); });
-    $('quick-replies').addEventListener('click', event => { const b=event.target.closest('[data-message]'); if(b) ask(b.dataset.message); });
-    $('deity').addEventListener('change', event => { selectedDeity=event.target.value; addMessage(`已切換為詢問「${event.target.options[event.target.selectedIndex].text}」。`); });
-
-    (async () => {
-      try {
-        const deities = await apiGet('/api/deities');
-        $('deity').innerHTML = deities.map(d=>`<option value="${d.id}"${d.id===selectedDeity?' selected':''}>詢問 ${d.name}</option>`).join('');
-        const placeId = new URLSearchParams(location.search).get('place');
-        if (placeId) currentPlace = await apiGet(`/api/places/${placeId}`);
-        addMessage(currentPlace ? `你正在查看「${currentPlace.name}」。想知道這裡適合祈求什麼，或需要準備哪些供品？` : '你好，我是神引路 AI。告訴我你想祈求的事情，我會依祭拜知識庫整理建議，也能直接叫出祭拜攻略。');
-      } catch (error) { addMessage('資料載入失敗，請確認網路連線後再試。'); }
-    })();
-  </script>
+  <script src="/assets/js/miniapp.js"></script>
+  <script src="/assets/js/guide.js"></script>
+  <script src="/assets/js/chat-page.js"></script>
 </body></html>

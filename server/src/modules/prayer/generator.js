@@ -2,11 +2,12 @@
 
 // AI 祝禱小助手 (concept demo).
 // Rule-based templates from knowledge base (name + topic + deity).
-// If LLM_API_KEY is set and not DEMO_MODE, try LLM polish; else template.
+// If GEMINI_API_KEY is set and not DEMO_MODE, try Gemini polish; else template.
 // Never invent folklore: only deity name / topics from JSON are used.
 
 const { VALID_INTENTS } = require('../chat/intent');
 const { findDeity } = require('../chat/knowledge');
+const { generate, DEFAULT_MODEL } = require('../chat/gemini');
 
 const LANGS = ['mandarin', 'taiwanese'];
 
@@ -46,28 +47,15 @@ function buildPrayer({ name, topic, lang, deity }) {
 }
 
 async function tryLlmPolish({ systemHint, draft, apiKey, model }) {
-  const r = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' },
-    body: JSON.stringify({
-      model: model || 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: systemHint },
-        { role: 'user', content: `請潤飾以下祝禱詞，保持原意與人名，不添加民俗內容：\n${draft}` },
-      ],
-      max_tokens: 400,
-    }),
+  const result = await generate({
+    apiKey, model, systemPrompt: systemHint,
+    message: `請潤飾以下祝禱詞，保持原意與人名，不添加民俗內容：\n${draft}`,
   });
-  if (!r.ok) throw new Error(`LLM ${r.status}`);
-  const data = await r.json();
-  const text = data.choices && data.choices[0] && data.choices[0].message
-    ? data.choices[0].message.content : '';
-  if (!text || !text.trim()) throw new Error('LLM empty');
-  return text.trim();
+  return result.text;
 }
 
 async function handlePrayer({ name, topic, lang, deityId }, ctx = {}) {
-  const { deities = [], demoMode = false, llmApiKey = '', llmModel = 'gpt-4o-mini' } = ctx;
+  const { deities = [], demoMode = false, geminiApiKey = '', geminiModel = DEFAULT_MODEL } = ctx;
   const clean = sanitizeName(name);
   const t = VALID_INTENTS.includes(topic) ? topic : '綜合';
   const l = LANGS.includes(lang) ? lang : 'mandarin';
@@ -75,11 +63,11 @@ async function handlePrayer({ name, topic, lang, deityId }, ctx = {}) {
   const draft = buildPrayer({ name: clean, topic: t, lang: l, deity });
   let text = draft;
   let llmStatus = 'mock';
-  if (llmApiKey && !demoMode) {
+  if (geminiApiKey && !demoMode) {
     try {
       text = await tryLlmPolish({
         systemHint: '你是祝禱詞潤飾助手，只能潤飾文字，不可編造民俗知識。',
-        draft, apiKey: llmApiKey, model: llmModel,
+        draft, apiKey: geminiApiKey, model: geminiModel,
       });
       llmStatus = 'llm';
     } catch { text = draft; }

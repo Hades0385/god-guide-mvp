@@ -39,6 +39,7 @@ function buildRichMenu(baseUrl = 'https://example.com') {
 async function lineRequest(pathname, token, options = {}) {
   const host = pathname.endsWith('/content') ? 'https://api-data.line.me' : 'https://api.line.me';
   const response = await fetch(`${host}${pathname}`, {
+    signal: AbortSignal.timeout(15000),
     ...options,
     headers: {
       authorization: `Bearer ${token}`,
@@ -56,6 +57,11 @@ async function lineRequest(pathname, token, options = {}) {
 }
 
 async function installRichMenu({ token, baseUrl }) {
+  let parsed;
+  try { parsed = new URL(baseUrl); } catch { throw Object.assign(new Error('PUBLIC_BASE_URL 必須為公開 HTTPS 網址'), { status:400 }); }
+  if (parsed.protocol !== 'https:' || ['localhost', '127.0.0.1', 'example.com'].includes(parsed.hostname) || parsed.username || parsed.password || parsed.search || parsed.hash || parsed.pathname !== '/') {
+    throw Object.assign(new Error('PUBLIC_BASE_URL 必須為公開 HTTPS 網站根網址'), { status:400 });
+  }
   if (!token) {
     const error = new Error('LINE_CHANNEL_ACCESS_TOKEN is required');
     error.status = 503;

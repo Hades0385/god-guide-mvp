@@ -1,6 +1,52 @@
 [
-  { "id": "fruit-1", "shopId": "chiayi-whole-fruits", "name": "當季水果禮盒", "price": 499, "unit": "盒", "offerings": ["水果"], "description": "結帳 Demo 品項；內容與實際售價以店家公告為準", "is_demo": true },
-  { "id": "fruit-2", "shopId": "chiayi-whole-fruits", "name": "簡約鮮果組", "price": 299, "unit": "組", "offerings": ["水果", "發粿", "清茶"], "description": "結帳 Demo 品項；搭配內容以店家公告為準", "is_demo": true },
-  { "id": "flower-1", "shopId": "chiayi-meiling-flower", "name": "敬神鮮花束", "price": 250, "unit": "束", "offerings": ["鮮花"], "description": "結帳 Demo 品項；花材依當季供應", "is_demo": true },
-  { "id": "incense-1", "shopId": "chiayi-xinxing-incense", "name": "環保香燭金紙組", "price": 150, "unit": "組", "offerings": ["金紙"], "description": "結帳 Demo 品項；祭拜用品請依宮廟規定選購", "is_demo": true }
+  {
+    "id": "fruit-1",
+    "shopId": "demo-store",
+    "name": "當季水果禮盒",
+    "price": 499,
+    "unit": "盒",
+    "offerings": [
+      "水果"
+    ],
+    "description": "示範商品，不代表任何真實店家的售價或庫存。",
+    "is_demo": true
+  },
+  {
+    "id": "fruit-2",
+    "shopId": "demo-store",
+    "name": "簡約鮮果組",
+    "price": 299,
+    "unit": "組",
+    "offerings": [
+      "水果",
+      "發粿",
+      "清茶"
+    ],
+    "description": "示範商品，不代表任何真實店家的售價或庫存。",
+    "is_demo": true
+  },
+  {
+    "id": "flower-1",
+    "shopId": "demo-store",
+    "name": "敬神鮮花束",
+    "price": 250,
+    "unit": "束",
+    "offerings": [
+      "鮮花"
+    ],
+    "description": "示範商品，不代表任何真實店家的售價或庫存。",
+    "is_demo": true
+  },
+  {
+    "id": "incense-1",
+    "shopId": "demo-store",
+    "name": "環保香燭金紙組",
+    "price": 150,
+    "unit": "組",
+    "offerings": [
+      "金紙"
+    ],
+    "description": "示範商品，不代表任何真實店家的售價或庫存。",
+    "is_demo": true
+  }
 ]

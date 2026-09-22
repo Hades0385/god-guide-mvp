@@ -1,4 +1,26 @@
 [
-  { "id": "set-fruit-1", "shopId": "chiayi-whole-fruits", "name": "鮮果敬神組", "price": 499, "contents": ["當季水果禮盒 × 1", "清茶包 × 1"], "description": "結帳流程 Demo，實際商品與價格以店家公告為準", "is_demo": true },
-  { "id": "set-flower-1", "shopId": "chiayi-meiling-flower", "name": "鮮花祈福組", "price": 350, "contents": ["敬神鮮花束 × 1", "小型供花 × 1"], "description": "結帳流程 Demo，花材依當季供應", "is_demo": true }
+  {
+    "id": "set-fruit-1",
+    "shopId": "demo-store",
+    "name": "鮮果敬神組",
+    "price": 499,
+    "contents": [
+      "當季水果禮盒 × 1",
+      "清茶包 × 1"
+    ],
+    "description": "示範商品，不代表任何真實店家的售價或庫存。",
+    "is_demo": true
+  },
+  {
+    "id": "set-flower-1",
+    "shopId": "demo-store",
+    "name": "鮮花祈福組",
+    "price": 350,
+    "contents": [
+      "敬神鮮花束 × 1",
+      "小型供花 × 1"
+    ],
+    "description": "示範商品，不代表任何真實店家的售價或庫存。",
+    "is_demo": true
+  }
 ]

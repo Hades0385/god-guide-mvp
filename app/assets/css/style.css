@@ -2,11 +2,11 @@
   --red: #8b0000;
   --red-dark: #6d0000;
   --gold: #c9a227;
-  --bg: #f7f5f0;
+  --bg: #f5f7f7;
   --card: #ffffff;
   --ink: #2b2b2b;
   --muted: #8a8171;
-  --line: #ece2c8;
+  --line: #dce3e2;
   --radius: 8px;
   --header-h: 56px;
   --tabbar-h: 64px;
@@ -230,6 +230,13 @@ pre.reply {
 .meta { font-size: 12px; color: var(--muted); }
 .row { display: flex; gap: 8px; align-items: center; }
 .row > input { flex: 1; min-width: 0; }
+.map-tools { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px; }
+.map-page .card { scroll-margin-top:70px; }
+#guide-component .strategy { max-width:100%; margin:12px 0; }
+.strategy { min-width:0; }
+.strategy-body { overflow-wrap:anywhere; }
+button:disabled { opacity:.5; cursor:not-allowed; }
+@media (max-width:440px) { .product-card { grid-template-columns:1fr; } }
 
 /* ---- reusable navigation and icon patterns ---- */
 .icon-btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
