@@ -1,9 +1,9 @@
 'use strict';
 const DEFAULT_MODEL = 'gemini-3.5-flash-lite';
 
-async function generate({ apiKey, model = DEFAULT_MODEL, systemPrompt, message, history = [], deityIds = [], fetchImpl = fetch }) {
+async function generate({ apiKey, model = DEFAULT_MODEL, systemPrompt, message, history = [], deityIds = [], timeoutMs = 60000, fetchImpl = fetch }) {
   const response = await fetchImpl(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
-    method: 'POST', signal: AbortSignal.timeout(20000),
+    method: 'POST', signal: AbortSignal.timeout(timeoutMs),
     headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: systemPrompt }] },

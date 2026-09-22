@@ -147,7 +147,14 @@ async function handleApi(req, res, rawBody) {
       ...e,
       deity: store.deities.find((d) => d.id === e.deity_id) || null,
     }));
-    sendJson(res, 200, { ...result, events });
+    const upcoming = result.upcoming ? {
+      ...result.upcoming,
+      event: {
+        ...result.upcoming.event,
+        deity: store.deities.find((d) => d.id === result.upcoming.event.deity_id) || null,
+      },
+    } : null;
+    sendJson(res, 200, { ...result, events, upcoming });
     log(req, 200, { event: 'events.today', count: events.length });
     return;
   }
@@ -185,6 +192,7 @@ async function handleApi(req, res, rawBody) {
         deities: store.deities, places: store.places, events: store.events, baseUrl,
         miniappUrl: `${baseUrl}/miniapp/index.html`, token: config.lineChannelAccessToken,
         demoMode: config.demoMode, geminiApiKey: config.geminiApiKey, geminiModel: config.geminiModel,
+        geminiTimeoutMs: config.geminiTimeoutMs,
       }));
       log(req, 200, { event: 'line.webhook', received: body.events.length });
       sendJson(res, 200, { ok: true, results });
@@ -228,6 +236,7 @@ async function handleApi(req, res, rawBody) {
         places: store.places,
         geminiApiKey: config.geminiApiKey,
         geminiModel: config.geminiModel,
+        geminiTimeoutMs: config.geminiTimeoutMs,
         demoMode: config.demoMode,
       });
       sendJson(res, 200, result);
@@ -361,6 +370,7 @@ async function handleApi(req, res, rawBody) {
         demoMode: config.demoMode,
         geminiApiKey: config.geminiApiKey,
         geminiModel: config.geminiModel,
+        geminiTimeoutMs: config.geminiTimeoutMs,
       });
       sendJson(res, 200, result);
       log(req, 200, { event: 'prayer', topic: result.topic, llm: result.llmStatus });
@@ -532,7 +542,11 @@ async function handleApi(req, res, rawBody) {
         log(req, 404);
         return;
       }
-      sendJson(res, 200, store.products.filter((pr) => pr.shopId === p.id));
+      // Shops without their own catalog fall back to demo products so the
+      // page still shows something purchasable; items keep is_demo for badging.
+      const own = store.products.filter((pr) => pr.shopId === p.id);
+      const items = own.length || p.is_demo ? own : store.products.filter((pr) => pr.is_demo);
+      sendJson(res, 200, items);
       log(req, 200, { event: 'places.products', id: p.id });
       return;
     }

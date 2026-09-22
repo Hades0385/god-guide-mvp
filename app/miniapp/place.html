@@ -29,7 +29,7 @@
           document.getElementById('deities').innerHTML = (p.deities || []).map(d => `<div class="card"><h3>${d.name}</h3><div class="deity-pill-list">${(d.prayer_topics || []).map(t=>`<span class="deity-pill">${t}</span>`).join('')}</div><p class="meta">${(d.main_beliefs || []).join('、')}</p></div>`).join('') || '<div class="card">奉祀資料整理中</div>';
         } else {
           const products = await apiGet(`/api/places/${id}/products`);
-          document.getElementById('products').innerHTML = products.length ? products.map(pr => `<div class="card product-card"><div><strong>${pr.name}</strong><div class="meta">${pr.description}</div></div><span class="price">NT$${pr.price}</span></div>`).join('') : '<div class="card">實際商品與售價請洽店家</div>';
+          document.getElementById('products').innerHTML = products.length ? products.map(pr => `<div class="card product-card"><div><strong>${pr.name}</strong>${pr.is_demo ? ' <span class="tag">Demo</span>' : ''}<div class="meta">${pr.description}</div></div><span class="price">NT$${pr.price}</span></div>`).join('') : '<div class="card">實際商品與售價請洽店家</div>';
         }
         document.getElementById('actions').style.display = 'flex';
         document.getElementById('nav').href = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(p.address)}`;

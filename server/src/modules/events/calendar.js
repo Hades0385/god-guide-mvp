@@ -26,6 +26,46 @@ function findEventsByLunar(lunarDate, events) {
   return (events || []).filter((e) => e.lunar_date === lunarDate && e.notification_enabled !== false);
 }
 
+function toYmd(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// Next solar occurrence (YYYY-MM-DD) of a lunar month/day on/after fromDate.
+// Returns null when the event has no numeric lunar fields or no valid date.
+function nextSolarForLunar(month, day, fromDate = new Date()) {
+  if (!Number.isInteger(month) || !Number.isInteger(day) || month < 1 || month > 12 || day < 1 || day > 30) return null;
+  const today = toYmd(fromDate);
+  for (const year of [fromDate.getFullYear(), fromDate.getFullYear() + 1]) {
+    try {
+      const solar = Lunar.fromYmd(year, month, day).getSolar();
+      const ymd = solar.toYmd();
+      if (ymd >= today) return ymd;
+    } catch { /* invalid lunar date (e.g. short month), try next year */ }
+  }
+  return null;
+}
+
+function daysBetween(fromYmd, toYmd) {
+  const [fy, fm, fd] = fromYmd.split('-').map(Number);
+  const [ty, tm, td] = toYmd.split('-').map(Number);
+  return Math.round((Date.UTC(ty, tm - 1, td) - Date.UTC(fy, fm - 1, fd)) / 86400000);
+}
+
+// Nearest upcoming festival (including today). Null when nothing resolves.
+function getUpcomingFestival(now = new Date(), events = []) {
+  const today = toYmd(now);
+  let best = null;
+  for (const e of events || []) {
+    if (e.notification_enabled === false) continue;
+    const solarDate = nextSolarForLunar(e.lunar_month, e.lunar_day, now);
+    if (!solarDate) continue;
+    if (!best || solarDate < best.solarDate) {
+      best = { event: e, solarDate, daysUntil: daysBetween(today, solarDate) };
+    }
+  }
+  return best;
+}
+
 function getTodayFestival(now = new Date(), events = [], opts = {}) {
   const demoMode = !!opts.demoMode;
   let lunar;
@@ -43,8 +83,9 @@ function getTodayFestival(now = new Date(), events = [], opts = {}) {
     lunarDate: lunar.lunarDate,
     events: matched,
     festivalToday: matched.length > 0,
+    upcoming: matched.length > 0 ? null : getUpcomingFestival(now, events),
     mocked,
   };
 }
 
-module.exports = { solarToLunar, findEventsByLunar, getTodayFestival, DEMO_LUNAR_LABEL };
+module.exports = { solarToLunar, findEventsByLunar, getTodayFestival, getUpcomingFestival, nextSolarForLunar, DEMO_LUNAR_LABEL };

@@ -22,8 +22,10 @@ Set `DEMO_MODE=true` in `.env` for fixed Tudigong festival (lunar 二月初二) 
 | `LINE_CHANNEL_SECRET` | [LINE Developers Console](https://developers.line.biz/console/) → 建 Messaging API Channel → Basic settings → Channel secret | webhook 不驗簽（僅開發方便，正式環境必須填） |
 | `LINE_CHANNEL_ACCESS_TOKEN` | 同一 Channel → Messaging API 分頁 → Channel access token → Issue | 只收得到事件、發不出推播/回覆（目前回覆僅 log） |
 | `MINIAPP_CHANNEL_ID` | 另建 Service Channel（Mini App 類型）；MVP 可先留空 | 地圖頁改用瀏覽器 GPS 定位，功能照常用 |
-| `LLM_API_KEY` | [OpenAI Platform](https://platform.openai.com/api-keys) → Create secret key | 自動用內建 mock 回覆（知識庫模板，零費用） |
-| `DEMO_MODE` | 自己填 `true`（競賽現場用） | 用真實日期判斷節慶 |
+| `GEMINI_API_KEY` | [Google AI Studio](https://aistudio.google.com/apikey) → Create API key | 自動用內建 mock 回覆（知識庫模板，零費用） |
+| `GEMINI_MODEL` | AI Studio 上的模型名稱（預設 `gemini-3.5-flash-lite`） | 用預設模型 |
+| `GEMINI_TIMEOUT_MS` | 自己填毫秒數（預設 `60000`）；回應慢但後台有成功時調大 | 20 秒→改為預設 60 秒超時，超時自動降級回 mock |
+| `DEMO_MODE` | 自己填 `true`（競賽現場用） | 用真實日期判斷節慶；`true` 時強制 mock、不打 Gemini |
 
 填完後：
 
@@ -38,7 +40,7 @@ ngrok http 3000
 
 | 概念 | Demo 入口 | 正式接法（得獎後再填） |
 |------|----------|----------------------|
-| AI 問事 | 對話式問答，AI 回覆可展開供品與祭拜步驟元件 | 填 `LLM_API_KEY` 即自動改走 LLM 潤飾 |
+| AI 問事 | 對話式問答，AI 回覆可展開供品與祭拜步驟元件 | 填 `GEMINI_API_KEY` 即自動改走 Gemini（知識庫僅供參考，每次附祝禱文） |
 | 智慧零售＋LINE Pay | 購物頁：套組（店家＋內容物）→ 綠色 LINE Pay 模擬結帳 → 集點中心看餘額 | 串 LINE Pay API（`LINE_PAY_CHANNEL_ID/SECRET`），把 `pay-confirm` 改打真正的 payment request |
 | Flex 社群分享 | 祝禱區「分享」鈕：LIFF `shareTargetPicker` → 系統分享 → 剪貼簿三級 fallback | Mini App 改用 LIFF 時載入 `liff SDK` 並 `liff.init`，第一級自動生效 |
 | Beacon 進店推播 | Demo 台「模擬 Beacon 進店」＋ `POST /api/beacon/enter` | 買 LINE Beacon 硬體 → 取 `BEACON_HWID` → 在 LINE 後台綁定 → webhook 收 `beacon` 事件後改打真推播（目前僅回傳 Flex 預覽） |

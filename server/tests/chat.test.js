@@ -47,3 +47,47 @@ test('handleChat: falls back to mock when LLM unreachable', async () => {
   assert.equal(r.llmStatus, 'mock');
   assert.ok(r.reply.length > 0);
 });
+
+test('handleChat: tool-only LLM reply (no text) falls back to mock, not llm', async () => {
+  const toolOnly = async () => ({
+    ok: true,
+    json: async () => ({ candidates: [{ content: { parts: [
+      { functionCall: { name: 'show_worship_guide', args: { deityId: 'tudigong' } } },
+    ] } }] }),
+  });
+  const r = await handleChat(
+    { message: '土地公怎麼拜比較好', deityId: 'tudigong' },
+    { deities, demoMode: false, geminiApiKey: 'test-key', fetchImpl: toolOnly },
+  );
+  assert.equal(r.llmStatus, 'mock');
+  assert.equal(r.fallbackReason, 'empty');
+  assert.ok(r.reply.includes('土地公'));
+});
+
+test('handleChat: forwards timeoutMs to the Gemini request', async () => {
+  let captured;
+  const spy = async (url, init) => {
+    captured = init;
+    return { ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: 'ok' }] } }] }) };
+  };
+  await handleChat(
+    { message: '想求財', deityId: 'tudigong' },
+    { deities, demoMode: false, geminiApiKey: 'test-key', geminiTimeoutMs: 90000, fetchImpl: spy },
+  );
+  assert.ok(captured.signal instanceof AbortSignal);
+});
+
+test('handleChat: LLM text reply keeps llm status', async () => {
+  const withText = async () => ({
+    ok: true,
+    json: async () => ({ candidates: [{ content: { parts: [
+      { text: '祝禱文參考：信士誠心祈求學業進步。' },
+    ] } }] }),
+  });
+  const r = await handleChat(
+    { message: '祈求學業順利', deityId: 'tudigong' },
+    { deities, demoMode: false, geminiApiKey: 'test-key', fetchImpl: withText },
+  );
+  assert.equal(r.llmStatus, 'llm');
+  assert.ok(r.reply.includes('祝禱文參考'));
+});

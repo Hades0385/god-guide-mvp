@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { solarToLunar, findEventsByLunar, getTodayFestival } = require('../src/modules/events/calendar');
+const { solarToLunar, findEventsByLunar, getTodayFestival, getUpcomingFestival, nextSolarForLunar } = require('../src/modules/events/calendar');
 const events = require('../data/events.json');
 
 test('solarToLunar: 2026-03-20 is 二月初二', () => {
@@ -26,4 +26,22 @@ test('getTodayFestival: demoMode forces tudigong festival', () => {
 test('getTodayFestival: real date 2026-03-20 matches', () => {
   const r = getTodayFestival(new Date(2026, 2, 20), events, { demoMode: false });
   assert.equal(r.festivalToday, true);
+});
+
+test('nextSolarForLunar: 2026 二月初二 is 2026-03-20', () => {
+  assert.equal(nextSolarForLunar(2, 2, new Date(2026, 0, 1)), '2026-03-20');
+});
+
+test('getUpcomingFestival: day after tudigong birthday points to guanyin', () => {
+  const r = getUpcomingFestival(new Date(2026, 2, 21), events);
+  assert.ok(r);
+  assert.equal(r.event.deity_id, 'guanyin');
+  assert.ok(r.daysUntil >= 1);
+});
+
+test('getTodayFestival: no festival today returns upcoming, not null', () => {
+  const r = getTodayFestival(new Date(2026, 5, 1), events, { demoMode: false });
+  assert.equal(r.festivalToday, false);
+  assert.ok(r.upcoming);
+  assert.ok(r.upcoming.event.deity_id);
 });

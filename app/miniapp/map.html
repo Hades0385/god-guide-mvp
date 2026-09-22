@@ -1,15 +1,59 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>神引路 — 找宮廟</title><link rel="stylesheet" href="/assets/css/style.css"><link rel="stylesheet" href="/assets/vendor/leaflet/leaflet.css"></head>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>神引路 — 找宮廟</title>
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="/assets/vendor/leaflet/leaflet.css">
+</head>
 <body>
-<main class="page map-page">
-  <div class="map-tools"><label>祈求 <select id="intent"><option value="">全部</option><option>求財</option><option>事業</option><option>平安</option><option>消災</option></select></label><button id="locate" class="btn secondary icon-btn"><i class="bi bi-crosshair"></i>使用定位</button></div>
-  <div class="map-tools" id="chips"><button data-cat="all" class="chip active">全部</button><button data-cat="temple" class="chip">宮廟</button><button data-cat="shop" class="chip">供品店</button><button id="clear-filter" class="chip">清除篩選</button></div>
-  <p class="meta" id="status" role="status">嘉義市 · 預設距離市中心 3 公里</p>
-  <p class="meta" id="filter-label"></p>
-  <div id="map" style="height:360px"></div>
-  <p id="tile-error" class="meta" hidden>底圖暫時無法載入，仍可使用下方地點清單與導航。</p>
-  <div class="section-head"><h2>地點清單</h2><span class="meta" id="count"></span></div><div id="places"></div>
-</main>
-<script src="/assets/vendor/leaflet/leaflet.js"></script><script src="/assets/js/api.js"></script><script src="/assets/js/map.js"></script><script src="/assets/js/layout.js" data-title="找宮廟" data-tab="map"></script><script src="/assets/js/map-page.js"></script>
-</body></html>
+  <main class="mapfull">
+    <div id="map"></div>
+    <div class="mapstatus" id="status" role="status">載入嘉義市資料…</div>
+    <div class="mapchips" id="chips">
+      <button data-cat="all" class="chip active">全部</button>
+      <button data-cat="temple" class="chip">宮廟</button>
+      <button data-cat="shop" class="chip">供品店</button>
+    </div>
+    <div class="mapfilter">
+      <label>祈求
+        <select id="intent">
+          <option value="">全部</option>
+          <option>求財</option>
+          <option>事業</option>
+          <option>平安</option>
+          <option>消災</option>
+        </select>
+      </label>
+      <button id="locate" class="chip"><i class="bi bi-crosshair"></i>定位</button>
+      <button id="show-list" class="chip">清單<span id="count"></span></button>
+      <button id="clear-filter" class="chip" hidden>清除篩選</button>
+    </div>
+    <p id="tile-error" class="map-tile-error" hidden>底圖暫時無法載入，仍可用清單與導航。</p>
+    <div class="offer-banner" id="offerbanner" style="display:none"></div>
+  </main>
+  <div class="sheet-backdrop" id="backdrop"></div>
+  <section class="sheet" id="sheet" aria-label="地點資訊">
+    <div class="grab"></div>
+    <div id="sheet-detail">
+      <h3 id="s-name">—</h3><div id="s-tags"></div>
+      <p class="meta" id="s-meta"></p><p id="s-desc"></p><div id="s-deities"></div>
+      <div class="actions">
+        <a class="btn secondary icon-btn" id="s-nav" href="#"><i class="bi bi-signpost"></i>導航</a>
+        <a class="btn icon-btn" id="s-detail" href="#"><i class="bi bi-arrow-right-circle"></i>詳情</a>
+      </div>
+    </div>
+    <div id="sheet-list" hidden>
+      <div class="section-head"><h3>地點清單</h3><span class="meta" id="list-count"></span></div>
+      <p class="meta" id="filter-label"></p>
+      <div id="places"></div>
+    </div>
+  </section>
+  <script src="/assets/vendor/leaflet/leaflet.js"></script>
+  <script src="/assets/js/api.js"></script>
+  <script src="/assets/js/map.js"></script>
+  <script src="/assets/js/layout.js" data-title="找宮廟" data-tab="map"></script>
+  <script src="/assets/js/map-page.js"></script>
+</body>
+</html>

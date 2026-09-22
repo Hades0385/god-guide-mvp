@@ -307,7 +307,7 @@ button:disabled { opacity:.5; cursor:not-allowed; }
 .mapfull #map { height: 100%; border: 0; border-radius: 0; }
 .mapfull .mapstatus {
   position: absolute;
-  top: 8px; left: 50px; right: 8px;
+  top: 8px; left: 8px; right: 8px;
   z-index: 500;
   background: rgba(255,255,255,.94);
   border: 1px solid var(--line);
@@ -319,7 +319,7 @@ button:disabled { opacity:.5; cursor:not-allowed; }
 }
 .mapchips {
   position: absolute;
-  top: 48px; left: 50px; right: 8px;
+  top: 48px; left: 8px; right: 8px;
   z-index: 500;
   display: flex;
   gap: 6px;
@@ -335,6 +335,41 @@ button:disabled { opacity:.5; cursor:not-allowed; }
 }
 .chip.active { background: var(--red); border-color: var(--red); color: #fff; font-weight: 700; }
 .chip .dot { display: inline-block; width: 8px; height: 8px; border-radius: 4px; margin-right: 4px; }
+.mapfilter {
+  position: absolute;
+  top: 88px; left: 8px; right: 8px;
+  z-index: 500;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.mapfilter label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,.94);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 13px;
+}
+.mapfilter select { border: 0; background: transparent; font-size: 13px; padding: 0; }
+.map-tile-error {
+  position: absolute;
+  bottom: 62px; left: 8px; right: 8px;
+  z-index: 500;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 6px 12px;
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0;
+}
+.sheet-card { margin: 8px 0; }
+.sheet-card .row { display: flex; gap: 8px; margin-top: 8px; }
+.sheet-card .row .btn { flex: 1; }
 .offer-banner {
   position: absolute;
   bottom: 12px; left: 8px; right: 8px;

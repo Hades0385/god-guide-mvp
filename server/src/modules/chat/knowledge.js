@@ -1,7 +1,8 @@
 'use strict';
 
 // Knowledge lookup over deities.json (plan.md:5, plan.md:6).
-// Never invent folklore: replies only cite fields + source_notes.
+// Mock fallback only cites fields + source_notes (never invent folklore).
+// LLM path (service.js system prompt) may elaborate within the soft tier.
 
 const { DISCLAIMER } = require('../line/flex');
 

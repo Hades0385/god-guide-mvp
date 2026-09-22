@@ -2,8 +2,9 @@
 
 // AI 祝禱小助手 (concept demo).
 // Rule-based templates from knowledge base (name + topic + deity).
-// If GEMINI_API_KEY is set and not DEMO_MODE, try Gemini polish; else template.
-// Never invent folklore: only deity name / topics from JSON are used.
+// If GEMINI_API_KEY is set and not DEMO_MODE, try Gemini compose; else template.
+// Hard facts (deity name / topics) come from JSON; LLM may elaborate wording
+// within generic worship etiquette, but never invent folklore specifics.
 
 const { VALID_INTENTS } = require('../chat/intent');
 const { findDeity } = require('../chat/knowledge');
@@ -46,16 +47,16 @@ function buildPrayer({ name, topic, lang, deity }) {
     `日後必常來參拜、多行善事。叩謝神恩。`;
 }
 
-async function tryLlmPolish({ systemHint, draft, apiKey, model }) {
+async function tryLlmPolish({ systemHint, draft, apiKey, model, timeoutMs = 60000 }) {
   const result = await generate({
-    apiKey, model, systemPrompt: systemHint,
-    message: `請潤飾以下祝禱詞，保持原意與人名，不添加民俗內容：\n${draft}`,
+    apiKey, model, systemPrompt: systemHint, timeoutMs,
+    message: `請將以下草稿寫成完整、誠懇的祝禱詞，保留人名與原意；可在通用參拜禮儀範圍內增色，不可編造民俗典故或保證效果：\n${draft}`,
   });
   return result.text;
 }
 
 async function handlePrayer({ name, topic, lang, deityId }, ctx = {}) {
-  const { deities = [], demoMode = false, geminiApiKey = '', geminiModel = DEFAULT_MODEL } = ctx;
+  const { deities = [], demoMode = false, geminiApiKey = '', geminiModel = DEFAULT_MODEL, geminiTimeoutMs = 60000 } = ctx;
   const clean = sanitizeName(name);
   const t = VALID_INTENTS.includes(topic) ? topic : '綜合';
   const l = LANGS.includes(lang) ? lang : 'mandarin';
@@ -66,11 +67,14 @@ async function handlePrayer({ name, topic, lang, deityId }, ctx = {}) {
   if (geminiApiKey && !demoMode) {
     try {
       text = await tryLlmPolish({
-        systemHint: '你是祝禱詞潤飾助手，只能潤飾文字，不可編造民俗知識。',
-        draft, apiKey: geminiApiKey, model: geminiModel,
+        systemHint: '你是祝禱詞撰寫助手。以人名、祈求主題、神明名稱為素材寫出得體的祝禱文，可在通用參拜禮儀範圍內增色；不可編造該神明的聖誕典故、專屬儀式、禁忌，或保證靈驗。',
+        draft, apiKey: geminiApiKey, model: geminiModel, timeoutMs: geminiTimeoutMs,
       });
       llmStatus = 'llm';
-    } catch { text = draft; }
+    } catch (err) {
+      console.error(JSON.stringify({ event: 'prayer.gemini_failed', detail: err && err.message }));
+      text = draft;
+    }
   }
   return {
     name: clean, topic: t, lang: l,

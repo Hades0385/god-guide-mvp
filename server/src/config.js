@@ -31,6 +31,7 @@ const config = {
   adminToken: process.env.ADMIN_TOKEN || '',
   geminiApiKey: process.env.GEMINI_API_KEY || '',
   geminiModel: process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
+  geminiTimeoutMs: Number(process.env.GEMINI_TIMEOUT_MS || 60000) || 60000,
 };
 
 module.exports = { config };
